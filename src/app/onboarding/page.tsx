@@ -283,11 +283,10 @@ function OnboardingContent() {
             {step === 1 && <>
               <div className="flex flex-col items-center gap-3 mt-2 mb-6 animate-ob-pop"
                    style={{ animationDelay: "0.45s" }}>
-                <div className="w-16 h-16 rounded-[20px] bg-white flex items-center justify-center
-                                shadow-[0_8px_24px_rgba(6,95,70,.25)] animate-ob-float"
-                     style={{ animationDelay: "1.3s" }}>
-                  <i className="ti ti-shield-check text-[36px] text-[var(--emerald-500)]" />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="Safebet"
+                     className="w-24 h-24 object-contain drop-shadow-xl animate-ob-float"
+                     style={{ animationDelay: "1.3s" }} />
               </div>
               <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-white
                              text-center [font-family:var(--font-display)] mb-2 animate-rise-in
@@ -470,11 +469,10 @@ function OnboardingContent() {
             {/* ── ÉTAPE 5 : Bienvenue ── */}
             {step === 5 && <>
               <div className="flex flex-col items-center gap-3 mt-6 mb-6">
-                <div className="w-16 h-16 rounded-[20px] bg-white flex items-center justify-center
-                                shadow-[0_8px_24px_rgba(6,95,70,.25)] animate-ob-pop"
-                     style={{ animationDelay: "0.45s" }}>
-                  <i className="ti ti-confetti text-[36px] text-[var(--emerald-500)]" />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="Safebet"
+                     className="w-24 h-24 object-contain drop-shadow-xl animate-ob-pop"
+                     style={{ animationDelay: "0.45s" }} />
               </div>
               <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-white
                              text-center [font-family:var(--font-display)] mb-2 animate-rise-in

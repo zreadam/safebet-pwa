@@ -440,9 +440,8 @@ export default function DashboardPage() {
         <header className="sticky top-0 z-30 bg-[var(--bg-1)] border-b border-[var(--border-light)]
                            px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-[10px]">
-            <div className="w-9 h-9 rounded-xl bg-[var(--emerald-500)] flex items-center justify-center">
-              <i className="ti ti-shield-check text-white text-[20px]" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Safebet" className="w-9 h-9 rounded-xl object-contain" />
             <span className="text-[19px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)] tracking-tight">
               Safebet
             </span>

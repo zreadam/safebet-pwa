@@ -381,9 +381,13 @@ export default function ParametresPage() {
         </Section>
 
         {/* App info */}
-        <p className="text-center text-xs text-[var(--color-text-secondary)] mt-2">
-          Safebet v1.0 · Fabriqué avec ❤️
-        </p>
+        <div className="flex flex-col items-center gap-2 mt-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Safebet" className="w-12 h-12 object-contain opacity-80" />
+          <p className="text-center text-xs text-[var(--color-text-secondary)]">
+            Safebet v1.0 · Fabriqué avec ❤️
+          </p>
+        </div>
       </div>
 
       {/* Delete confirm modal */}

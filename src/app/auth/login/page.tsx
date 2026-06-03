@@ -71,9 +71,8 @@ function LoginContent() {
       <div className="w-full max-w-[430px] mx-auto">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-[var(--emerald-500)] flex items-center justify-center mb-3 shadow-[0_4px_16px_rgba(16,185,129,0.3)]">
-            <i className="ti ti-shield-check text-white text-[28px]" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Safebet" className="w-20 h-20 object-contain mb-2" />
           <span className="text-[26px] font-bold text-[var(--fg-1)] [font-family:var(--font-display)]">
             Safebet
           </span>
