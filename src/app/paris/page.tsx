@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import AppShell from "@/components/layout/AppShell"
-import { BluffBadge } from "@/components/ui/bluff-badge"
 import { PremiumLock } from "@/components/ui/premium-lock"
 import { useProfile } from "@/hooks/useProfile"
 import { cn } from "@/lib/utils"
@@ -191,7 +190,9 @@ export default function ParisPage() {
           <div className="flex gap-3">
             <MetricCard label="Solde">
               {profile
-                ? <BluffBadge value={profile.balance.toFixed(2)} className="text-[13px]" />
+                ? <span className="text-[18px] font-bold [font-family:var(--font-display)] text-[var(--emerald-600)] whitespace-nowrap">
+                    {profile.balance.toFixed(2)} B
+                  </span>
                 : <div className="skeleton w-20 h-7 rounded mx-auto" />}
             </MetricCard>
             <MetricCard label="Gain total">
