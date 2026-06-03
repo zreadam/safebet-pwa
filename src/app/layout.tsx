@@ -7,7 +7,12 @@ export const metadata: Metadata = {
   description: "Paris fictifs entre amis autour du football. 100% fun, zéro risque.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Safebet" },
-  icons: { apple: "/icons/icon-192.png", icon: "/logo.png" },
+  icons: {
+    icon: [
+      { url: "/logo.png", type: "image/png" },
+    ],
+    apple: "/icons/icon-192.png",
+  },
 }
 
 export const viewport: Viewport = {
