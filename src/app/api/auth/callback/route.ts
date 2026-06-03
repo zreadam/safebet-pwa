@@ -20,9 +20,9 @@ export async function GET(request: Request) {
           .eq("id", user.id)
           .single()
 
-        // New user → onboarding step 2 (account already created via Google)
+        // New user via Google → dashboard directement (pas besoin de créer un compte)
         if (!profile?.onboarding_done) {
-          return NextResponse.redirect(`${origin}/onboarding?step=2`)
+          return NextResponse.redirect(`${origin}/dashboard`)
         }
       }
 
