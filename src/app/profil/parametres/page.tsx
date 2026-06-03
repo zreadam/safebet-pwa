@@ -16,6 +16,17 @@ const AVATAR_COLORS = [
   "#EC4899","#14B8A6","#F97316","#64748B","#0EA5E9",
 ]
 
+const PIXEL_AVATARS = [
+  { id: "r9",          label: "Ronaldo R9",    src: "/avatars/r9.png" },
+  { id: "ronaldinho",  label: "Ronaldinho",    src: "/avatars/ronaldinho.png" },
+  { id: "zidane",      label: "Zidane",        src: "/avatars/zidane.png" },
+  { id: "beckham",     label: "Beckham",       src: "/avatars/beckam.png" },
+  { id: "luis-enrique",label: "Luis Enrique",  src: "/avatars/luis-enrique.png" },
+  { id: "guardiola",   label: "Guardiola",     src: "/avatars/guardiola.png" },
+  { id: "mbappe",      label: "Mbappé",        src: "/avatars/mbappe.png" },
+  { id: "yamal",       label: "Lamine Yamal",  src: "/avatars/yamal.png" },
+]
+
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
@@ -126,7 +137,7 @@ export default function ParametresPage() {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, avatar_color: avatarColor }),
+        body: JSON.stringify({ username, avatar_color: avatarColor, avatar_url: avatarUrl }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -200,69 +211,51 @@ export default function ParametresPage() {
         <Section title="Mon profil">
           <form onSubmit={handleSaveProfile}>
             <div className="px-4 pt-4 pb-3 space-y-4">
-              {/* Avatar preview + upload + color */}
+              {/* Avatar actuel */}
               <div className="flex items-center gap-4">
-                {/* Avatar — input file transparent superposé (iOS-safe) */}
-                <div className="relative flex-shrink-0 w-16 h-16">
-                  {/* Visuel avatar */}
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden">
-                    {avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center text-white font-bold text-xl"
-                        style={{ backgroundColor: avatarColor }}
-                      >
-                        {initials}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Overlay caméra permanent (visible uniquement quand pas en chargement) */}
-                  <div className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center pointer-events-none">
-                    {uploadingPhoto
-                      ? <i className="ti ti-loader-2 text-white text-[22px] animate-spin" />
-                      : <i className="ti ti-camera text-white text-[22px]" />}
-                  </div>
-
-                  {/* Input file directement superposé — iOS Safari compatible */}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    disabled={uploadingPhoto}
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      width: "100%",
-                      height: "100%",
-                      opacity: 0,
-                      cursor: "pointer",
-                      fontSize: "0",   // évite le texte "Choose file" sur Android
-                    }}
-                  />
+                <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[var(--color-brand-primary)]">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" style={{ imageRendering: "pixelated" }} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white font-bold text-xl"
+                         style={{ backgroundColor: avatarColor }}>
+                      {initials}
+                    </div>
+                  )}
                 </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">Photo de profil</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Choisis un avatar pixel art ci-dessous</p>
+                </div>
+              </div>
 
-                <div className="flex-1">
-                  <p className="text-xs text-[var(--color-text-secondary)] mb-1">
-                    Appuie sur l'avatar pour changer ta photo
-                  </p>
-                  <p className="text-xs text-[var(--color-text-secondary)] mb-2">Couleur de l'avatar</p>
-                  <div className="flex flex-wrap gap-2">
-                    {AVATAR_COLORS.map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setAvatarColor(c)}
-                        className={cn(
-                          "w-6 h-6 rounded-full transition-all",
-                          avatarColor === c ? "ring-2 ring-offset-1 ring-offset-[var(--color-bg-card)] ring-white scale-110" : ""
-                        )}
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
-                  </div>
+              {/* Galerie avatars pixel art */}
+              <div>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-2 font-semibold uppercase tracking-wider">Avatars pixel art</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {PIXEL_AVATARS.map(av => (
+                    <button
+                      key={av.id}
+                      type="button"
+                      onClick={() => setAvatarUrl(av.src)}
+                      className={cn(
+                        "relative rounded-xl overflow-hidden aspect-square transition-all",
+                        avatarUrl === av.src
+                          ? "ring-2 ring-[var(--color-brand-primary)] scale-105"
+                          : "opacity-70 hover:opacity-100"
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={av.src} alt={av.label} className="w-full h-full object-cover"
+                           style={{ imageRendering: "pixelated" }} />
+                      {avatarUrl === av.src && (
+                        <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-[var(--color-brand-primary)] flex items-center justify-center">
+                          <i className="ti ti-check text-white text-[9px]" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
 
