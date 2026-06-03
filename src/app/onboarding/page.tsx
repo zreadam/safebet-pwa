@@ -314,12 +314,12 @@ function OnboardingContent() {
 
             {/* ── ÉTAPE 2 : Compétitions + équipe favorite ── */}
             {step === 2 && <>
-              <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-white
+              <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-white text-center
                              [font-family:var(--font-display)] mb-2 animate-rise-in mt-4"
                   style={{ animationDelay: "0.3s" }}>
                 Tes préférences
               </h1>
-              <p className="text-white/95 text-[15px] mb-5 animate-rise-in" style={{ animationDelay: "0.38s" }}>
+              <p className="text-white/95 text-[15px] mb-5 animate-rise-in text-center" style={{ animationDelay: "0.38s" }}>
                 On personnalisera ton expérience
               </p>
 
@@ -385,12 +385,12 @@ function OnboardingContent() {
 
             {/* ── ÉTAPE 3 : Création de compte ── */}
             {step === 3 && <>
-              <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-white
+              <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-white text-center
                              [font-family:var(--font-display)] mb-2 animate-rise-in mt-4"
                   style={{ animationDelay: "0.3s" }}>
                 Crée ton compte
               </h1>
-              <p className="text-white/95 text-[15px] mb-6 animate-rise-in" style={{ animationDelay: "0.38s" }}>
+              <p className="text-white/95 text-[15px] mb-6 animate-rise-in text-center" style={{ animationDelay: "0.38s" }}>
                 Sauvegarde ton solde et tes ligues
               </p>
 
@@ -426,12 +426,12 @@ function OnboardingContent() {
 
             {/* ── ÉTAPE 4 : Tuto PWA ── */}
             {step === 4 && <>
-              <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-white
+              <h1 className="text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-white text-center
                              [font-family:var(--font-display)] mb-2 animate-rise-in mt-4"
                   style={{ animationDelay: "0.3s" }}>
                 Installe l'app !
               </h1>
-              <p className="text-white/95 text-[15px] mb-6 animate-rise-in" style={{ animationDelay: "0.38s" }}>
+              <p className="text-white/95 text-[15px] mb-6 animate-rise-in text-center" style={{ animationDelay: "0.38s" }}>
                 Accède à Safebet depuis ton écran d'accueil
               </p>
               <div className="flex flex-col gap-4 animate-rise-in" style={{ animationDelay: "0.46s" }}>
