@@ -162,16 +162,18 @@ export default function ParisPage() {
       .catch(() => setLoading(false))
   }, [])
 
-  const wonBets  = bets.filter(b => b.status === "won")
-  const lostBets = bets.filter(b => b.status === "lost")
+  const realBets  = bets.filter(b => b.stake > 0)          // exclut le bonus de départ (stake=0)
+  const wonBets   = realBets.filter(b => b.status === "won")
+  const lostBets  = realBets.filter(b => b.status === "lost")
   const totalGain = wonBets.reduce((s, b) => s + b.potential_gain - b.stake, 0)
-  const successRate = bets.length > 0
-    ? Math.round((wonBets.length / bets.filter(b => b.status !== "pending" && b.status !== "void").length || 0) * 100)
+  const settledBets = realBets.filter(b => b.status !== "pending" && b.status !== "void")
+  const successRate = settledBets.length > 0
+    ? Math.round((wonBets.length / settledBets.length) * 100)
     : 0
 
   const filtered = filter === "all"
-    ? bets
-    : bets.filter(b => b.status === filter)
+    ? realBets
+    : realBets.filter(b => b.status === filter)
 
   return (
     <AppShell>
