@@ -1,0 +1,186 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Emerald */
+  --emerald-50: #ECFDF5;
+  --emerald-100: #D1FAE5;
+  --emerald-300: #6EE7B7;
+  --emerald-500: #10B981;
+  --emerald-600: #059669;
+  --emerald-900: #065F46;
+
+  /* Amber (Premium) */
+  --amber-50: #FEF3C7;
+  --amber-200: #FDE68A;
+  --amber-500: #F59E0B;
+  --amber-700: #B45309;
+  --amber-900: #78350F;
+
+  /* Semantic */
+  --success: #10B981;
+  --error: #EF4444;
+  --warning: #F59E0B;
+  --info: #3B82F6;
+
+  /* Light mode */
+  --bg-1: #FFFFFF;
+  --bg-2: #F9FAFB;
+  --bg-3: #F3F4F6;
+  --border-light: #E5E7EB;
+  --border-medium: #D1D5DB;
+  --fg-1: #111827;
+  --fg-2: #6B7280;
+  --fg-3: #9CA3AF;
+
+  /* shadcn compat */
+  --background: var(--bg-1);
+  --foreground: var(--fg-1);
+  --card: var(--bg-1);
+  --card-foreground: var(--fg-1);
+  --border: var(--border-light);
+  --input: var(--border-light);
+  --primary: var(--emerald-500);
+  --primary-foreground: #ffffff;
+  --ring: var(--emerald-500);
+  --radius: 10px;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-base: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.10);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.dark {
+  --bg-1: #0F172A;
+  --bg-2: #1E293B;
+  --bg-3: #334155;
+  --border-light: #334155;
+  --border-medium: #475569;
+  --fg-1: #F8FAFC;
+  --fg-2: #94A3B8;
+  --fg-3: #64748B;
+  --background: var(--bg-1);
+  --foreground: var(--fg-1);
+  --card: var(--bg-2);
+  --card-foreground: var(--fg-1);
+  --border: var(--border-light);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Figtree', system-ui, sans-serif;
+  --font-sans: 'Figtree', system-ui, sans-serif;
+
+  --color-emerald-50: var(--emerald-50);
+  --color-emerald-100: var(--emerald-100);
+  --color-emerald-500: var(--emerald-500);
+  --color-emerald-600: var(--emerald-600);
+  --color-emerald-900: var(--emerald-900);
+  --color-amber-500: var(--amber-500);
+  --color-amber-700: var(--amber-700);
+  --color-bg-1: var(--bg-1);
+  --color-bg-2: var(--bg-2);
+  --color-bg-3: var(--bg-3);
+  --color-fg-1: var(--fg-1);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-border-light: var(--border-light);
+  --color-error: var(--error);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --radius-btn: 10px;
+  --radius-card: 12px;
+  --radius-modal: 16px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: 'Figtree', system-ui, sans-serif;
+  background: var(--bg-1);
+  color: var(--fg-1);
+}
+
+/* Mobile safe area */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Prevent horizontal scroll */
+#__next, #root { overflow-x: hidden; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 0; height: 0; }
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@keyframes blob-expand {
+  from { clip-path: circle(3% at 50% 50%); }
+  to   { clip-path: circle(150% at 50% 50%); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ob-pop {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+@keyframes ob-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pulse-live { animation: pulse-live 1.5s infinite; }
+
+/* "both" = applique l'état "from" dès le départ, même pendant le delay
+   → les éléments sont invisibles jusqu'au lancement de l'animation */
+.animate-blob-expand { animation: blob-expand 0.75s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-rise-in     { animation: rise-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-ob-pop      { animation: ob-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-ob-float    { animation: ob-float 3.6s ease-in-out infinite; }
+.animate-card-in     { animation: card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-up    { animation: slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-count-up    { animation: count-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}

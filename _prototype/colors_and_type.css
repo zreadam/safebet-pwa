@@ -1,0 +1,115 @@
+/* ============================================================
+   SAFEBET — Design System v1.1
+   colors_and_type.css
+   Foundational color + type tokens (light + dark).
+   Fonts: Space Grotesk (display) + Figtree (body) via Google Fonts.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---------- FONT FAMILIES ---------- */
+  --font-display: 'Space Grotesk', system-ui, sans-serif; /* titres, chiffres, cotes, soldes */
+  --font-body: 'Figtree', system-ui, sans-serif;          /* texte courant, labels */
+
+  /* ---------- PRIMARY — Vert émeraude ---------- */
+  --emerald-50:  #ECFDF5;
+  --emerald-100: #D1FAE5;
+  --emerald-300: #6EE7B7;
+  --emerald-500: #10B981;  /* base / hero */
+  --emerald-600: #059669;  /* pressed, accents forts */
+  --emerald-900: #065F46;  /* texte sur fond clair */
+
+  /* ---------- PREMIUM — Ambre doré ---------- */
+  --amber-50:  #FEF3C7;
+  --amber-200: #FDE68A;
+  --amber-500: #F59E0B;  /* base premium / locked */
+  --amber-700: #B45309;
+  --amber-900: #78350F;
+
+  /* ---------- SEMANTIC ---------- */
+  --success: #10B981;  /* pari gagné */
+  --error:   #EF4444;  /* pari perdu */
+  --warning: #F59E0B;  /* en attente */
+  --info:    #3B82F6;  /* en cours */
+
+  /* ---------- NEUTRALS — Light mode (default) ---------- */
+  --bg-1: #FFFFFF;   /* background principal */
+  --bg-2: #F9FAFB;   /* cards, surfaces */
+  --bg-3: #F3F4F6;   /* hover sur cards */
+  --border-light:  #E5E7EB;
+  --border-medium: #D1D5DB;
+  --fg-1: #111827;   /* texte principal */
+  --fg-2: #6B7280;   /* texte secondaire */
+  --fg-3: #9CA3AF;   /* texte tertiaire / placeholder */
+
+  /* ---------- BLUFF CURRENCY ---------- */
+  --bluff: var(--emerald-500);
+  --bluff-badge-bg: var(--emerald-50);
+  --bluff-badge-fg: var(--emerald-900);
+
+  /* ---------- SPACING ---------- */
+  --space-xs:   4px;
+  --space-sm:   8px;
+  --space-md:   12px;
+  --space-base: 16px;
+  --space-lg:   24px;
+  --space-xl:   32px;
+  --space-2xl:  48px;
+
+  /* ---------- RADIUS ---------- */
+  --radius-xs:    4px;
+  --radius-sm:    8px;
+  --radius-btn:   10px;
+  --radius-card:  12px;
+  --radius-modal: 16px;
+  --radius-pill:  999px;
+
+  /* ---------- SHADOWS ---------- */
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.10);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.15);
+
+  /* ---------- TYPE SCALE (mobile / desktop via clamp) ---------- */
+  --text-display: 700 clamp(28px, 4vw, 36px)/1.2 var(--font-display); /* H1 hero/onboarding */
+  --text-h2:      600 clamp(20px, 2.4vw, 24px)/1.2 var(--font-display);
+  --text-h3:      600 clamp(16px, 1.6vw, 18px)/1.3 var(--font-body);
+  --text-body:    400 clamp(14px, 1.2vw, 15px)/1.5 var(--font-body);
+  --text-label:   500 clamp(12px, 1vw, 13px)/1.4 var(--font-body);
+  --text-cote:    700 clamp(16px, 1.6vw, 18px)/1.2 var(--font-display);
+  --text-solde:   700 clamp(22px, 2.4vw, 26px)/1.2 var(--font-display);
+  --text-micro:   400 clamp(11px, 1vw, 12px)/1.4 var(--font-body);
+}
+
+/* ============================================================
+   DARK MODE — apply via [data-theme="dark"] on a wrapper or :root
+   ============================================================ */
+[data-theme="dark"] {
+  --bg-1: #0F172A;
+  --bg-2: #1E293B;
+  --bg-3: #334155;
+  --border-light:  #334155;
+  --border-medium: #475569;
+  --fg-1: #F8FAFC;
+  --fg-2: #94A3B8;
+  --fg-3: #64748B;
+
+  --bluff-badge-bg: var(--emerald-900);
+  --bluff-badge-fg: #FFFFFF;
+
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.4);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT DEFAULTS — opt in by importing this file
+   ============================================================ */
+.sb-display { font: var(--text-display); letter-spacing: -0.02em; color: var(--fg-1); }
+.sb-h2      { font: var(--text-h2); letter-spacing: -0.02em; color: var(--fg-1); }
+.sb-h3      { font: var(--text-h3); color: var(--fg-1); }
+.sb-body    { font: var(--text-body); color: var(--fg-2); }
+.sb-label   { font: var(--text-label); letter-spacing: 0.02em; text-transform: uppercase; color: var(--fg-3); }
+.sb-cote    { font: var(--text-cote); color: var(--emerald-500); }
+.sb-solde   { font: var(--text-solde); color: var(--fg-1); }
+.sb-micro   { font: var(--text-micro); color: var(--fg-3); }

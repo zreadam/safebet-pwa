@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10B981">
+<title>Safebet — Parie avec tes amis</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="kit.css">
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="Onboarding.jsx"></script>
+<script type="text/babel" src="Dashboard.jsx"></script>
+<script type="text/babel" src="MatchDetail.jsx"></script>
+<script type="text/babel" src="Screens.jsx"></script>
+<script type="text/babel" src="App.jsx"></script>
+
+<script>
+  // Scale the phone so the whole device fits and stays dead-centered.
+  function fitPhone() {
+    var el = document.querySelector('.phone');
+    var root = document.getElementById('root');
+    if (!el) return;
+    var pad = 24;
+    var s = Math.min((window.innerWidth - pad) / 390, (window.innerHeight - pad) / 844, 1);
+    document.documentElement.style.setProperty('--phone-scale', s);
+    root.style.width  = (390 * s) + 'px';
+    root.style.height = (844 * s) + 'px';
+  }
+  window.addEventListener('resize', fitPhone);
+  var _fit = setInterval(function() {
+    if (document.querySelector('.phone')) { fitPhone(); clearInterval(_fit); }
+  }, 80);
+</script>
+</body>
+</html>

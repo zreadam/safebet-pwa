@@ -1,0 +1,16 @@
+{
+  "name": "Safebet",
+  "short_name": "Safebet",
+  "description": "Paris fictifs entre amis. 100% fun, zéro risque.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10B981",
+  "theme_color": "#10B981",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["sports", "games", "social"],
+  "lang": "fr"
+}
