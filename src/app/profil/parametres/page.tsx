@@ -211,22 +211,51 @@ export default function ParametresPage() {
         <Section title="Mon profil">
           <form onSubmit={handleSaveProfile}>
             <div className="px-4 pt-4 pb-3 space-y-4">
-              {/* Avatar actuel */}
+              {/* Avatar actuel + bouton upload */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-[var(--color-brand-primary)]">
-                  {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" style={{ imageRendering: "pixelated" }} />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white font-bold text-xl"
-                         style={{ backgroundColor: avatarColor }}>
-                      {initials}
-                    </div>
-                  )}
+                {/* Conteneur relatif pour le rond caméra en bas à droite */}
+                <div className="relative flex-shrink-0 w-16 h-16">
+                  {/* Avatar */}
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[var(--color-brand-primary)]">
+                    {avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover"
+                           style={{ imageRendering: "pixelated" }} />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white font-bold text-xl"
+                           style={{ backgroundColor: avatarColor }}>
+                        {initials}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rond caméra bas-droite — input file overlay iOS-safe */}
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--color-brand-primary)]
+                                  flex items-center justify-center shadow-md overflow-hidden">
+                    {uploadingPhoto
+                      ? <i className="ti ti-loader-2 text-white text-[12px] animate-spin pointer-events-none" />
+                      : <i className="ti ti-camera text-white text-[12px] pointer-events-none" />}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      disabled={uploadingPhoto}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        opacity: 0,
+                        cursor: "pointer",
+                        fontSize: "0",
+                      }}
+                    />
+                  </div>
                 </div>
+
                 <div>
                   <p className="text-sm font-semibold text-[var(--color-text-primary)]">Photo de profil</p>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Choisis un avatar pixel art ci-dessous</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Galerie ci-dessous ou ta propre photo</p>
                 </div>
               </div>
 
