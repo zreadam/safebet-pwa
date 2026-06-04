@@ -112,10 +112,14 @@ export default function ProfilPage() {
       <div className="max-w-[430px] mx-auto">
 
         {/* ── header ── */}
-        <header className="sticky top-0 z-30 bg-[var(--bg-1)] border-b border-[var(--border-light)] px-4 py-3">
+        <header className="sticky top-0 z-30 bg-[var(--bg-1)] border-b border-[var(--border-light)] px-4 py-3 flex items-center justify-between">
           <h1 className="text-[21px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)] tracking-tight">
             Mon profil
           </h1>
+          <Link href="/profil/parametres"
+                className="w-9 h-9 rounded-xl bg-[var(--bg-2)] border border-[var(--border-light)] flex items-center justify-center">
+            <i className="ti ti-settings text-[18px] text-[var(--fg-2)]" />
+          </Link>
         </header>
 
         <div className="px-4 pt-6 pb-4 flex flex-col gap-6">
