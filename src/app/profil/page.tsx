@@ -127,7 +127,9 @@ export default function ProfilPage() {
   const [notifBets, setNotifBets]       = useState(true)
   const [notifLeagues, setNotifLeagues] = useState(false)
   const [notifMatches, setNotifMatches] = useState(true)
-  const [showSheet, setShowSheet]       = useState(false)
+  const [pushSupported, setPushSupported] = useState(false)
+  const [pushGranted, setPushGranted]     = useState(false)
+  const [showSheet, setShowSheet]         = useState(false)
   const [avatarUrl, setAvatarUrl]       = useState<string | null>(null)
   const [uploading, setUploading]       = useState(false)
   const [editingName, setEditingName]   = useState(false)
@@ -145,6 +147,11 @@ export default function ProfilPage() {
       setUsername(profile.username || "")
     }
   }, [profile])
+
+  useEffect(() => {
+    setPushSupported("Notification" in window && "serviceWorker" in navigator)
+    setPushGranted(Notification.permission === "granted")
+  }, [])
 
   async function saveName() {
     if (!username.trim()) return
@@ -235,14 +242,10 @@ export default function ProfilPage() {
       <div className="max-w-[430px] mx-auto">
 
         {/* ── header ── */}
-        <header className="sticky top-0 z-30 bg-[var(--bg-1)] border-b border-[var(--border-light)] px-4 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-30 bg-[var(--bg-1)] border-b border-[var(--border-light)] px-4 py-3">
           <h1 className="text-[21px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)] tracking-tight">
             Mon profil
           </h1>
-          <Link href="/profil/parametres"
-                className="w-9 h-9 rounded-xl bg-[var(--bg-2)] border border-[var(--border-light)] flex items-center justify-center">
-            <i className="ti ti-settings text-[18px] text-[var(--fg-2)]" />
-          </Link>
         </header>
 
         <div className="px-4 pt-6 pb-4 flex flex-col gap-6">
@@ -378,66 +381,53 @@ export default function ProfilPage() {
             </Link>
           )}
 
-          {/* ── Settings ── */}
+          {/* ── Notifications ── */}
           <section>
             <h2 className="text-[17px] font-semibold [font-family:var(--font-display)]
                            text-[var(--fg-1)] tracking-tight mb-2">
-              Paramètres
+              Notifications
             </h2>
             <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
                             [box-shadow:var(--shadow-card)] overflow-hidden">
-              <SettingRow
-                icon="ti-moon"
-                label="Mode sombre"
-                sub="Changer l'apparence de l'app"
-                toggle={{ value: darkMode, onChange: toggleDark }}
-              />
-              <SettingRow
-                icon="ti-world"
-                label="Langue"
-                sub="Langue de l'interface"
-                rightText="Français"
-              />
-              <SettingRow
-                icon="ti-crown"
-                label="Abonnement"
-                sub={isPremium ? "Tu es Premium ✨" : "Passe au Premium"}
-                href="/premium"
-              />
-              {/* Séparateur Notifications */}
-              <div className="px-4 py-2 bg-[var(--bg-2)]">
-                <p className="text-[11px] font-semibold text-[var(--fg-3)] uppercase tracking-wider">
-                  Notifications
-                </p>
-              </div>
-              <SettingRow
-                icon="ti-bell"
-                label="Résultats de paris"
-                toggle={{ value: notifBets, onChange: setNotifBets }}
-              />
-              <SettingRow
-                icon="ti-star"
-                label="Quêtes disponibles"
-                toggle={{ value: notifs, onChange: setNotifs }}
-              />
-              <SettingRow
-                icon="ti-users"
-                label="Activité des ligues"
-                toggle={{ value: notifLeagues, onChange: setNotifLeagues }}
-              />
-              <SettingRow
-                icon="ti-calendar"
-                label="Rappels avant match"
-                toggle={{ value: notifMatches, onChange: setNotifMatches }}
-              />
-              <SettingRow
-                icon="ti-logout"
-                label="Déconnexion"
-                danger
-                onClick={signOut}
-              />
+              <SettingRow icon="ti-bell"    label="Résultats de paris"  toggle={{ value: notifBets,    onChange: setNotifBets }} />
+              <SettingRow icon="ti-star"    label="Quêtes disponibles"  toggle={{ value: notifs,       onChange: setNotifs }} />
+              <SettingRow icon="ti-users"   label="Activité des ligues" toggle={{ value: notifLeagues, onChange: setNotifLeagues }} />
+              <SettingRow icon="ti-calendar"label="Rappels avant match" toggle={{ value: notifMatches, onChange: setNotifMatches }} />
+              {/* Bouton activer push */}
+              {pushSupported && !pushGranted && (
+                <div className="px-4 py-3">
+                  <button
+                    onClick={async () => {
+                      const perm = await Notification.requestPermission()
+                      setPushGranted(perm === "granted")
+                      if (perm === "granted") toast.success("Notifications activées !")
+                      else toast.error("Notifications refusées")
+                    }}
+                    className="w-full py-3 rounded-xl border border-[var(--emerald-500)]
+                               text-[var(--emerald-500)] text-sm font-semibold flex items-center justify-center gap-2">
+                    <i className="ti ti-bell-ringing text-base" />
+                    Activer les notifications push
+                  </button>
+                </div>
+              )}
+              {pushGranted && (
+                <div className="px-4 py-3 flex items-center gap-2">
+                  <i className="ti ti-bell-check text-[var(--emerald-500)]" />
+                  <span className="text-xs text-[var(--fg-3)]">Notifications push activées</span>
+                </div>
+              )}
             </div>
           </section>
+
+          {/* ── Déconnexion ── */}
+          <button onClick={signOut}
+                  className="flex items-center gap-3 w-full px-4 py-3.5 rounded-[var(--radius-card)]
+                             bg-[var(--bg-1)] border border-[var(--border-light)] [box-shadow:var(--shadow-card)]">
+            <div className="w-9 h-9 rounded-[10px] bg-[#FEF2F2] flex items-center justify-center">
+              <i className="ti ti-logout text-[var(--error)] text-lg" />
+            </div>
+            <span className="text-[14px] font-medium text-[var(--error)]">Se déconnecter</span>
+          </button>
 
           {/* ── Legal note ── */}
           <p className="text-[11px] text-[var(--fg-3)] text-center pb-2">
