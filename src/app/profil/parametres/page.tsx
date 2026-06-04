@@ -262,30 +262,39 @@ export default function ParametresPage() {
                 </div>
               </div>
 
-              {/* Galerie avatars pixel art */}
+              {/* Carrousel avatars pixel art */}
               <div>
-                <p className="text-xs text-[var(--color-text-secondary)] mb-2 font-semibold uppercase tracking-wider">Avatars pixel art</p>
-                <div className="grid grid-cols-4 gap-2">
+                <p className="text-xs text-[var(--color-text-secondary)] mb-3 font-semibold uppercase tracking-wider">
+                  Avatars pixel art
+                </p>
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory"
+                     style={{ scrollbarWidth: "none" }}>
                   {PIXEL_AVATARS.map(av => (
                     <button
                       key={av.id}
                       type="button"
                       onClick={() => setAvatarUrl(av.src)}
-                      className={cn(
-                        "relative rounded-xl overflow-hidden aspect-square transition-all",
-                        avatarUrl === av.src
-                          ? "ring-2 ring-[var(--color-brand-primary)] scale-105"
-                          : "opacity-70 hover:opacity-100"
-                      )}
+                      className="flex-shrink-0 snap-center flex flex-col items-center gap-1.5"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={av.src} alt={av.label} className="w-full h-full object-cover"
-                           style={{ imageRendering: "pixelated" }} />
-                      {avatarUrl === av.src && (
-                        <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-[var(--color-brand-primary)] flex items-center justify-center">
-                          <i className="ti ti-check text-white text-[9px]" />
-                        </div>
-                      )}
+                      <div className={cn(
+                        "w-20 h-20 rounded-2xl overflow-hidden transition-all duration-200",
+                        avatarUrl === av.src
+                          ? "ring-3 ring-[var(--color-brand-primary)] scale-105 shadow-lg"
+                          : "opacity-60 hover:opacity-90"
+                      )}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={av.src} alt={av.label}
+                             className="w-full h-full object-cover"
+                             style={{ imageRendering: "pixelated" }} />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-semibold whitespace-nowrap",
+                        avatarUrl === av.src
+                          ? "text-[var(--color-brand-primary)]"
+                          : "text-[var(--color-text-secondary)]"
+                      )}>
+                        {av.label}
+                      </span>
                     </button>
                   ))}
                 </div>
