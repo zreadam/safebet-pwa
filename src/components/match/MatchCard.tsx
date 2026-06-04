@@ -75,7 +75,7 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
         {done && <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-[var(--emerald-50)] text-[var(--emerald-900)]">Terminé</span>}
         {!live && !done && (
           <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-[#EFF6FF] text-[#1E3A5F]">
-            {formatDate(m.kickoff)} · {new Date(m.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+            {new Date(m.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
           </span>
         )}
       </div>
@@ -92,7 +92,9 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
           </div>
           {live && <div className="text-xs text-[var(--fg-3)] mt-1">{m.minute}</div>}
           {!live && !done && (
-            <div className="text-xs text-[var(--fg-3)] mt-1">{formatDate(m.kickoff)}</div>
+            <div className="text-xs text-[var(--fg-3)] mt-1">
+              {new Date(m.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
+            </div>
           )}
         </div>
         <div className="flex flex-col items-center gap-[7px] w-24">

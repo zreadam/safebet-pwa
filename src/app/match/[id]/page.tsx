@@ -602,14 +602,18 @@ export default function MatchDetailPage() {
   const isDone = match.state === "done"
   const isSoon = match.state === "soon"
 
-  const hasRealOdds = allBets.length > 0
+  // "Tous" visible dès qu'on a des cotes (allBets API-Football ou detailedOdds)
+  const hasRealOdds = allBets.length > 0 || !!detailedOdds
   const hasTeamData = !!(formHome || formAway || h2h)
   const hasEvents   = events && events.length > 0
   const hasLineups  = lineups && lineups.length > 0
   const hasPredictions = !!predictions
+  // Marchés buteurs = bet ID 9 (1er buteur) ou 10 (dernier) ou 13 (à tout moment)
+  const goalScorerBets = allBets.filter(b => [9, 10, 13].includes(b.id))
+  const hasGoalScorer  = goalScorerBets.length > 0
   const tabs = isLive
     ? ["Résultat live", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasEvents ? ["Événements"] : []), ...(hasLineups ? ["Compos"] : []), "Stats"]
-    : ["Résultat", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasLineups ? ["Compos"] : []), "Buteurs", "Stats"]
+    : ["Résultat", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasLineups ? ["Compos"] : []), ...(hasGoalScorer ? ["Buteurs"] : []), "Stats"]
 
   const resultMarkets    = buildMarkets(match, detailedOdds)
   const goalMarkets      = buildGoalMarkets(match, detailedOdds)
@@ -889,36 +893,35 @@ export default function MatchDetailPage() {
     }
 
     if (tabLabel === "Buteurs") {
-      const allGoals = [...goalEvents, ...cardEvents].sort((a, b) => a.minute - b.minute)
+      const BET_SCORER_NAMES: Record<number, string> = {
+        9: "1er buteur",
+        10: "Dernier buteur",
+        13: "Buteur à tout moment",
+      }
       return (
-        <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
-                        p-4 [box-shadow:var(--shadow-card)]">
-          <p className="text-[13px] font-semibold text-[var(--fg-2)] mb-3">Buts & cartons</p>
-          {allGoals.length === 0 ? (
-            <p className="text-center text-[var(--fg-3)] text-[13px] py-4">
-              {match.state === "soon" ? "Match pas encore commencé" : "Aucun événement disponible"}
-            </p>
-          ) : allGoals.map((e, i) => {
-            const isHome = e.team === match.home_team
-            const isGoal = e.type === "Goal"
-            const isYellow = e.detail === "Yellow Card"
-            const isRed = e.detail === "Red Card" || e.detail === "Second Yellow card"
+        <div className="flex flex-col gap-3 pb-2">
+          {goalScorerBets.length === 0 ? (
+            <div className="text-center py-10 text-[var(--fg-3)] text-[13px]">
+              <i className="ti ti-ball-football text-[32px] block mb-2" />
+              Marchés buteurs non disponibles pour ce match
+            </div>
+          ) : goalScorerBets.map(bet => {
+            const mkt: OddsRow = {
+              key: `scorer-${bet.id}`,
+              label: BET_SCORER_NAMES[bet.id] ?? bet.name,
+              outcomes: bet.values.map(v => ({
+                key: v.value,
+                label: v.value,
+                price: parseFloat(v.odd) || 1.01,
+              })),
+            }
             return (
-              <div key={i} className={cn(
-                "flex items-center gap-3 py-2 border-b border-[var(--border-light)] last:border-0",
-                isHome ? "" : "flex-row-reverse"
-              )}>
-                <span className="text-[12px] font-bold text-[var(--fg-3)] w-8 text-center shrink-0">
-                  {e.minute}&apos;
-                </span>
-                {isGoal && <i className="ti ti-ball-football text-[var(--emerald-500)] text-[18px] shrink-0" />}
-                {isYellow && <span className="w-4 h-5 rounded-sm bg-yellow-400 shrink-0" />}
-                {isRed && <span className="w-4 h-5 rounded-sm bg-red-500 shrink-0" />}
-                <div className={cn("flex-1", !isHome && "text-right")}>
-                  <p className="text-[13px] font-semibold text-[var(--fg-1)]">{e.player}</p>
-                  {e.assist && <p className="text-[11px] text-[var(--fg-3)]">Passe : {e.assist}</p>}
-                </div>
-              </div>
+              <MarketBlock
+                key={mkt.key}
+                market={mkt}
+                selectedKey={selectedKey}
+                onSelect={o => handleMarketSelect(mkt, o)}
+              />
             )
           })}
         </div>
