@@ -140,6 +140,23 @@ interface H2HFixture {
   winner: "home" | "draw" | "away"
 }
 
+interface Predictions {
+  winner: { name: string | null; comment: string | null }
+  percent: { home: string; draw: string; away: string }
+  advice: string
+}
+
+interface InjuryEntry {
+  player: string
+  reason: string
+  type: string
+}
+
+interface Injuries {
+  home: InjuryEntry[]
+  away: InjuryEntry[]
+}
+
 const o = (v: number | null | undefined, fallback: number) => v && v > 1 ? v : fallback
 
 /* ──────────────────── Odds market builders ──────────────────── */
@@ -537,6 +554,8 @@ export default function MatchDetailPage() {
   const [formHome, setFormHome]     = useState<FormFixture[] | null>(null)
   const [formAway, setFormAway]     = useState<FormFixture[] | null>(null)
   const [h2h, setH2h]               = useState<H2HFixture[] | null>(null)
+  const [predictions, setPredictions] = useState<Predictions | null>(null)
+  const [injuries, setInjuries]     = useState<Injuries | null>(null)
   const [loading, setLoading]     = useState(true)
   const [activeTab, setActiveTab] = useState(0)
   const [isFav, setIsFav]         = useState(false)
@@ -556,6 +575,8 @@ export default function MatchDetailPage() {
         setFormHome(data.formHome ?? null)
         setFormAway(data.formAway ?? null)
         setH2h(data.h2h ?? null)
+        setPredictions(data.predictions ?? null)
+        setInjuries(data.injuries ?? null)
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -583,9 +604,12 @@ export default function MatchDetailPage() {
 
   const hasRealOdds = allBets.length > 0
   const hasTeamData = !!(formHome || formAway || h2h)
+  const hasEvents   = events && events.length > 0
+  const hasLineups  = lineups && lineups.length > 0
+  const hasPredictions = !!predictions
   const tabs = isLive
-    ? ["Résultat live", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), "Stats"]
-    : ["Résultat", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), "Buteurs", "Stats"]
+    ? ["Résultat live", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasEvents ? ["Événements"] : []), ...(hasLineups ? ["Compos"] : []), "Stats"]
+    : ["Résultat", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasLineups ? ["Compos"] : []), "Buteurs", "Stats"]
 
   const resultMarkets    = buildMarkets(match, detailedOdds)
   const goalMarkets      = buildGoalMarkets(match, detailedOdds)
@@ -832,6 +856,34 @@ export default function MatchDetailPage() {
               </div>
             </div>
           )}
+
+          {/* Absents */}
+          {injuries && (injuries.home.length > 0 || injuries.away.length > 0) && (
+            <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
+                            p-4 [box-shadow:var(--shadow-card)]">
+              <p className="text-[14px] font-bold text-[var(--fg-1)] mb-3">Absents</p>
+              {[
+                { label: match.home_team, list: injuries.home },
+                { label: match.away_team, list: injuries.away },
+              ].map(({ label, list }) => list.length > 0 && (
+                <div key={label} className="mb-3 last:mb-0">
+                  <p className="text-[12px] font-semibold text-[var(--fg-3)] uppercase tracking-wide mb-2">{label}</p>
+                  <div className="flex flex-col gap-2">
+                    {list.map((inj, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-[var(--bg-2)] rounded-[8px] px-3 py-2">
+                        <i className="ti ti-bandage text-[var(--error)] text-[16px] shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold text-[var(--fg-1)] truncate">{inj.player}</p>
+                          <p className="text-[11px] text-[var(--fg-3)]">{inj.reason || inj.type}</p>
+                        </div>
+                        <span className="text-[11px] font-semibold text-[var(--error)] shrink-0">{inj.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )
     }
@@ -869,6 +921,166 @@ export default function MatchDetailPage() {
               </div>
             )
           })}
+        </div>
+      )
+    }
+
+    if (tabLabel === "Événements") {
+      const allEvents = [...(events ?? [])].sort((a, b) => a.minute - b.minute)
+      return (
+        <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
+                        p-4 [box-shadow:var(--shadow-card)]">
+          <p className="text-[14px] font-bold text-[var(--fg-1)] mb-4">Événements du match</p>
+          {allEvents.length === 0 ? (
+            <p className="text-center text-[var(--fg-3)] text-[13px] py-4">Aucun événement disponible</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {allEvents.map((e, i) => {
+                const isHome = e.team === match.home_team
+                const isGoal = e.type === "Goal" && e.detail !== "Missed Penalty"
+                const isYellow = e.type === "Card" && e.detail === "Yellow Card"
+                const isRed = e.type === "Card" && (e.detail === "Red Card" || e.detail === "Second Yellow card")
+                const isSub = e.type === "subst"
+                const icon = isGoal ? "⚽" : isYellow ? "🟨" : isRed ? "🟥" : isSub ? "🔄" : "•"
+                return (
+                  <div key={i} className={cn(
+                    "flex items-center gap-3 py-2 border-b border-[var(--border-light)] last:border-0",
+                    !isHome && "flex-row-reverse"
+                  )}>
+                    <span className="text-[12px] font-bold text-[var(--fg-3)] w-8 text-center shrink-0">
+                      {e.minute}&apos;
+                    </span>
+                    <span className="text-[16px] shrink-0">{icon}</span>
+                    <div className={cn("flex-1", !isHome && "text-right")}>
+                      <p className="text-[13px] font-semibold text-[var(--fg-1)]">{e.player}</p>
+                      <p className="text-[11px] text-[var(--fg-3)]">{e.team}</p>
+                      {e.assist && <p className="text-[11px] text-[var(--fg-3)]">Passe : {e.assist}</p>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (tabLabel === "Compos") {
+      return (
+        <div className="flex flex-col gap-4">
+          {(lineups ?? []).map((lineup, li) => (
+            <div key={li} className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
+                                    p-4 [box-shadow:var(--shadow-card)]">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[14px] font-bold text-[var(--fg-1)]">{lineup.team}</p>
+                <span className="text-[12px] font-semibold text-[var(--emerald-500)] bg-[var(--emerald-50)] px-2 py-1 rounded-full">
+                  {lineup.formation}
+                </span>
+              </div>
+              {lineup.coach && (
+                <p className="text-[12px] text-[var(--fg-3)] mb-3">Coach : {lineup.coach}</p>
+              )}
+              <div className="grid grid-cols-2 gap-[6px]">
+                {lineup.startXI.map((p, pi) => (
+                  <div key={pi} className="flex items-center gap-2 bg-[var(--bg-2)] rounded-[8px] px-2 py-[6px]">
+                    <span className="w-6 h-6 rounded-full bg-[var(--emerald-500)] flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                      {p.number}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-[var(--fg-1)] truncate">{p.name}</p>
+                      <p className="text-[10px] text-[var(--fg-3)]">{p.pos}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {(!lineups || lineups.length === 0) && (
+            <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)] p-4 text-center">
+              <p className="text-[13px] text-[var(--fg-3)] py-4">Compositions indisponibles</p>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (tabLabel === "Prono") {
+      if (!predictions) {
+        return (
+          <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)] p-4 text-center">
+            <p className="text-[13px] text-[var(--fg-3)] py-4">Pronostics indisponibles</p>
+          </div>
+        )
+      }
+      const pctHome = parseInt(predictions.percent.home) || 0
+      const pctDraw = parseInt(predictions.percent.draw) || 0
+      const pctAway = parseInt(predictions.percent.away) || 0
+      return (
+        <div className="flex flex-col gap-4">
+          {/* Pourcentages */}
+          <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
+                          p-4 [box-shadow:var(--shadow-card)]">
+            <p className="text-[14px] font-bold text-[var(--fg-1)] mb-4">Probabilités</p>
+            <div className="flex flex-col gap-4">
+              {[
+                { label: match.home_team, pct: pctHome, color: "var(--emerald-500)" },
+                { label: "Nul",           pct: pctDraw, color: "var(--fg-3)" },
+                { label: match.away_team, pct: pctAway, color: "#6B7280" },
+              ].map(row => (
+                <div key={row.label} className="flex flex-col gap-[6px]">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="font-semibold text-[var(--fg-1)]">{row.label}</span>
+                    <span className="font-bold [font-family:var(--font-display)]" style={{ color: row.color }}>{row.pct}%</span>
+                  </div>
+                  <div className="h-[8px] bg-[var(--bg-3)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${row.pct}%`, background: row.color }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Conseil */}
+          {predictions.advice && (
+            <div className="bg-[var(--emerald-50)] border border-[var(--emerald-500)] rounded-[var(--radius-card)] p-4">
+              <p className="text-[12px] font-semibold text-[var(--emerald-600)] uppercase tracking-wide mb-1">Conseil de pari</p>
+              <p className="text-[14px] font-bold text-[var(--fg-1)]">{predictions.advice}</p>
+            </div>
+          )}
+
+          {/* Vainqueur prédit */}
+          {predictions.winner.name && (
+            <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)] p-4 [box-shadow:var(--shadow-card)]">
+              <p className="text-[12px] font-semibold text-[var(--fg-3)] uppercase tracking-wide mb-1">Vainqueur prédit</p>
+              <p className="text-[16px] font-bold text-[var(--fg-1)]">{predictions.winner.name}</p>
+              {predictions.winner.comment && (
+                <p className="text-[12px] text-[var(--fg-3)] mt-1">{predictions.winner.comment}</p>
+              )}
+            </div>
+          )}
+
+          {/* Forme récente (résumé) */}
+          {(formHome || formAway) && (
+            <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)] p-4 [box-shadow:var(--shadow-card)]">
+              <p className="text-[14px] font-bold text-[var(--fg-1)] mb-3">Forme récente (5 matchs)</p>
+              {[{ label: match.home_team, form: formHome }, { label: match.away_team, form: formAway }].map(({ label, form }) => form && (
+                <div key={label} className="mb-3 last:mb-0">
+                  <p className="text-[12px] font-semibold text-[var(--fg-3)] mb-2">{label}</p>
+                  <div className="flex gap-[6px]">
+                    {form.map((f, i) => (
+                      <span key={i} className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0",
+                        f.result === "W" ? "bg-[var(--emerald-500)]" : f.result === "L" ? "bg-[var(--error)]" : "bg-[var(--fg-3)]"
+                      )}>{f.result}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )
     }

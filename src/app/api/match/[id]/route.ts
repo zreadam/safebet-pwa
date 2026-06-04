@@ -3,6 +3,32 @@ import { createClient } from "@/lib/supabase/server"
 
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
 
+// Cache TTLs
+const TTL_LIVE_MS   = 5 * 60 * 1000       // 5 min for events/lineups
+const TTL_STATIC_MS = 24 * 60 * 60 * 1000 // 24h  for predictions/h2h/injuries/stats/odds
+
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>
+
+async function getCached(supabase: SupabaseClient, key: string, ttlMs: number) {
+  const { data } = await supabase
+    .from("match_cache")
+    .select("data, updated_at")
+    .eq("key", key)
+    .single()
+  if (!data) return null
+  const age = Date.now() - new Date(data.updated_at).getTime()
+  if (age > ttlMs) return null
+  return data.data
+}
+
+async function setCache(supabase: SupabaseClient, key: string, value: unknown) {
+  await supabase.from("match_cache").upsert({
+    key,
+    data: value,
+    updated_at: new Date().toISOString(),
+  })
+}
+
 // Même liste que dans /api/matches/route.ts — fallback si Supabase ne l'a pas encore
 const STATIC_FRIENDLIES: Record<string, { home_team: string; away_team: string; home_team_code: string; away_team_code: string; kickoff: string; odds_1: number; odds_n: number; odds_2: number }> = {
   "ami-ned-alg": { home_team:"Pays-Bas",    away_team:"Algérie",      home_team_code:"NED", away_team_code:"ALG", kickoff:"2026-06-03T18:00:00Z", odds_1:1.70, odds_n:3.80, odds_2:4.50 },
@@ -116,25 +142,37 @@ export async function GET(
   let formHome: { result: "W"|"D"|"L"; score: string; opponent: string; date: string; competition: string }[] | null = null
   let formAway: { result: "W"|"D"|"L"; score: string; opponent: string; date: string; competition: string }[] | null = null
   let h2h: { home: string; away: string; score: string; date: string; competition: string; winner: "home"|"draw"|"away" }[] | null = null
+  let predictions: { winner: { name: string | null; comment: string | null }; percent: { home: string; draw: string; away: string }; advice: string } | null = null
+  let injuries: { home: { player: string; reason: string; type: string }[]; away: { player: string; reason: string; type: string }[] } | null = null
 
   // Récupérer les IDs d'équipes depuis matchData (injecté lors du parsing fixture)
   const homeTeamId: number | null = (matchData as Record<string, unknown>)._homeTeamId as number | null ?? null
   const awayTeamId: number | null = (matchData as Record<string, unknown>)._awayTeamId as number | null ?? null
 
   if (fixtureId) {
-    const [statsRes, eventsRes, lineupsRes, oddsRes, formHomeRes, formAwayRes, h2hRes] = await Promise.all([
-      apfFetch(`fixtures/statistics?fixture=${fixtureId}`),
-      apfFetch(`fixtures/events?fixture=${fixtureId}`),
-      apfFetch(`fixtures/lineups?fixture=${fixtureId}`),
+    // Helper: fetch with Supabase cache
+    async function fetchCached(path: string, cacheKey: string, ttlMs: number) {
+      const cached = await getCached(supabase, cacheKey, ttlMs)
+      if (cached !== null) return cached
+      const data = await apfFetch(path)
+      if (data !== null) await setCache(supabase, cacheKey, data)
+      return data
+    }
+
+    const [statsRes, eventsRes, lineupsRes, oddsRes, formHomeRes, formAwayRes, h2hRes, predictionsRes, injuriesRes] = await Promise.all([
+      fetchCached(`fixtures/statistics?fixture=${fixtureId}`, `match_${fixtureId}_stats`, TTL_LIVE_MS),
+      fetchCached(`fixtures/events?fixture=${fixtureId}`, `match_${fixtureId}_events`, TTL_LIVE_MS),
+      fetchCached(`fixtures/lineups?fixture=${fixtureId}`, `match_${fixtureId}_lineups`, TTL_LIVE_MS),
       // Pas de filtre bookmaker : on prend le premier disponible (gratuit)
-      apfFetch(`odds?fixture=${fixtureId}`),
-      homeTeamId ? apfFetch(`fixtures?team=${homeTeamId}&last=5`) : Promise.resolve(null),
-      awayTeamId ? apfFetch(`fixtures?team=${awayTeamId}&last=5`) : Promise.resolve(null),
-      (homeTeamId && awayTeamId) ? apfFetch(`fixtures/headtohead?h2h=${homeTeamId}-${awayTeamId}&last=5`) : Promise.resolve(null),
+      fetchCached(`odds?fixture=${fixtureId}`, `match_${fixtureId}_odds`, TTL_STATIC_MS),
+      homeTeamId ? fetchCached(`fixtures?team=${homeTeamId}&last=5`, `match_${fixtureId}_form_home`, TTL_STATIC_MS) : Promise.resolve(null),
+      awayTeamId ? fetchCached(`fixtures?team=${awayTeamId}&last=5`, `match_${fixtureId}_form_away`, TTL_STATIC_MS) : Promise.resolve(null),
+      (homeTeamId && awayTeamId) ? fetchCached(`fixtures/headtohead?h2h=${homeTeamId}-${awayTeamId}&last=5`, `match_${fixtureId}_h2h`, TTL_STATIC_MS) : Promise.resolve(null),
+      fetchCached(`predictions?fixture=${fixtureId}`, `match_${fixtureId}_predictions`, TTL_STATIC_MS),
+      fetchCached(`injuries?fixture=${fixtureId}`, `match_${fixtureId}_injuries`, TTL_STATIC_MS),
     ])
 
     // Parser les cotes — chercher le bookmaker avec le plus de marchés
-    let allBets: { id: number; name: string; values: { value: string; odd: string }[] }[] = []
     if (oddsRes && oddsRes.length > 0) {
       type Bet = { id: number; name: string; values: { value: string; odd: string }[] }
       type Bookmaker = { id: number; name: string; bets: Bet[] }
@@ -305,6 +343,44 @@ export async function GET(
         }
       })
     }
+
+    // ── Pronostics ──
+    if (predictionsRes && predictionsRes.length > 0) {
+      const p = predictionsRes[0]
+      predictions = {
+        winner: {
+          name: p.predictions?.winner?.name ?? null,
+          comment: p.predictions?.winner?.comment ?? null,
+        },
+        percent: {
+          home: p.predictions?.percent?.home ?? "0%",
+          draw: p.predictions?.percent?.draw ?? "0%",
+          away: p.predictions?.percent?.away ?? "0%",
+        },
+        advice: p.predictions?.advice ?? "",
+      }
+    }
+
+    // ── Blessés/Suspendus ──
+    if (injuriesRes && injuriesRes.length > 0) {
+      const homeInjuries: { player: string; reason: string; type: string }[] = []
+      const awayInjuries: { player: string; reason: string; type: string }[] = []
+      for (const inj of injuriesRes as {
+        player: { name: string }
+        reason: string
+        type: string
+        team: { id: number }
+      }[]) {
+        const entry = {
+          player: inj.player.name,
+          reason: inj.reason ?? "",
+          type: inj.type ?? "",
+        }
+        if (inj.team.id === homeTeamId) homeInjuries.push(entry)
+        else awayInjuries.push(entry)
+      }
+      injuries = { home: homeInjuries, away: awayInjuries }
+    }
   }
 
   // Nettoyer les champs internes avant d'envoyer au client
@@ -314,5 +390,5 @@ export async function GET(
     matchData = cleanMatch
   }
 
-  return NextResponse.json({ match: matchData, stats, events, lineups, detailedOdds, allBets, formHome, formAway, h2h })
+  return NextResponse.json({ match: matchData, stats, events, lineups, detailedOdds, allBets, formHome, formAway, h2h, predictions, injuries })
 }
