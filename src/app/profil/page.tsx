@@ -4,12 +4,32 @@ export const dynamic = "force-dynamic"
 
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
+import Cropper from "react-easy-crop"
 import AppShell from "@/components/layout/AppShell"
 import { BluffBadge } from "@/components/ui/bluff-badge"
 import { useProfile } from "@/hooks/useProfile"
 import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import type { Area } from "react-easy-crop"
+
+/* ── helper: crop image via canvas ───────────────────────────── */
+async function getCroppedBlob(imageSrc: string, cropArea: Area): Promise<Blob> {
+  const img = await new Promise<HTMLImageElement>((res, rej) => {
+    const i = new Image()
+    i.onload = () => res(i)
+    i.onerror = rej
+    i.src = imageSrc
+  })
+  const canvas = document.createElement("canvas")
+  canvas.width  = cropArea.width
+  canvas.height = cropArea.height
+  const ctx = canvas.getContext("2d")!
+  ctx.drawImage(img, cropArea.x, cropArea.y, cropArea.width, cropArea.height, 0, 0, cropArea.width, cropArea.height)
+  return new Promise((res, rej) =>
+    canvas.toBlob(b => b ? res(b) : rej(new Error("blob null")), "image/jpeg", 0.9)
+  )
+}
 
 const PIXEL_AVATARS = [
   { id: "r9",           label: "Ronaldo R9",   src: "/avatars/r9.png" },
@@ -113,6 +133,11 @@ export default function ProfilPage() {
   const [editingName, setEditingName]   = useState(false)
   const [username, setUsername]         = useState("")
   const [savingName, setSavingName]     = useState(false)
+  // crop
+  const [cropSrc, setCropSrc]           = useState<string | null>(null)
+  const [crop, setCrop]                 = useState({ x: 0, y: 0 })
+  const [zoom, setZoom]                 = useState(1)
+  const [croppedArea, setCroppedArea]   = useState<Area | null>(null)
 
   useEffect(() => {
     if (profile) {
@@ -146,10 +171,10 @@ export default function ProfilPage() {
     setDarkMode(html.classList.contains("dark"))
   }, [])
 
-  /* choisir un avatar pixel art */
+  /* choisir un avatar pixel art — sheet reste ouvert */
   async function selectAvatar(src: string) {
     setAvatarUrl(src)
-    setShowSheet(false)
+    // on ne ferme PAS le sheet
     try {
       await fetch("/api/profile", {
         method: "PATCH",
@@ -163,15 +188,28 @@ export default function ProfilPage() {
     }
   }
 
-  /* uploader sa propre photo */
-  const handlePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /* ouvrir le crop modal quand une photo est choisie */
+  const handlePhotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropSrc(reader.result as string)
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+    }
+    reader.readAsDataURL(file)
+  }, [])
+
+  /* confirmer le rognage et uploader */
+  const confirmCrop = useCallback(async () => {
+    if (!cropSrc || !croppedArea) return
     setUploading(true)
-    setShowSheet(false)
+    setCropSrc(null)
     try {
+      const blob = await getCroppedBlob(cropSrc, croppedArea)
       const fd = new FormData()
-      fd.append("file", file)
+      fd.append("file", new File([blob], "avatar.jpg", { type: "image/jpeg" }))
       const res  = await fetch("/api/profile/avatar", { method: "POST", body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -183,7 +221,7 @@ export default function ProfilPage() {
     } finally {
       setUploading(false)
     }
-  }, [refetch])
+  }, [cropSrc, croppedArea, refetch])
 
   function toggleDark(on: boolean) {
     setDarkMode(on)
@@ -405,6 +443,53 @@ export default function ProfilPage() {
         </div>
       </div>
 
+      {/* ── Crop modal ── */}
+      {cropSrc && (
+        <div className="fixed inset-0 z-[60] bg-black flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 bg-black/80">
+            <button onClick={() => setCropSrc(null)}
+                    className="text-white/70 text-sm font-semibold">
+              Annuler
+            </button>
+            <p className="text-white font-bold text-sm">Rogner la photo</p>
+            <button
+              onClick={confirmCrop}
+              disabled={uploading}
+              className="text-[var(--emerald-400)] font-bold text-sm disabled:opacity-50">
+              {uploading ? "Envoi…" : "Confirmer"}
+            </button>
+          </div>
+
+          {/* Zone de crop */}
+          <div className="relative flex-1">
+            <Cropper
+              image={cropSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={(_, area) => setCroppedArea(area)}
+            />
+          </div>
+
+          {/* Slider zoom */}
+          <div className="px-6 py-4 bg-black/80 flex items-center gap-3">
+            <i className="ti ti-zoom-out text-white/50 text-lg" />
+            <input
+              type="range"
+              min={1} max={3} step={0.01}
+              value={zoom}
+              onChange={e => setZoom(Number(e.target.value))}
+              className="flex-1 accent-[var(--emerald-500)]"
+            />
+            <i className="ti ti-zoom-in text-white/50 text-lg" />
+          </div>
+        </div>
+      )}
+
       {/* ── Bottom sheet avatar ── */}
       {showSheet && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
@@ -419,12 +504,12 @@ export default function ProfilPage() {
               </button>
             </div>
 
-            {/* Grille 4×2 */}
+            {/* Grille 4×2 — sans noms, sheet reste ouvert */}
             <div className="grid grid-cols-4 gap-3 mb-5">
               {PIXEL_AVATARS.map(av => (
                 <button key={av.id} type="button"
                         onClick={() => selectAvatar(av.src)}
-                        className="flex flex-col items-center gap-1">
+                        className="flex flex-col items-center">
                   <div className={cn(
                     "w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all",
                     avatarUrl === av.src
@@ -436,7 +521,6 @@ export default function ProfilPage() {
                          className="w-full h-full object-cover"
                          style={{ imageRendering: "pixelated" }} />
                   </div>
-                  <span className="text-[9px] text-white/60 text-center leading-tight">{av.label}</span>
                 </button>
               ))}
             </div>
