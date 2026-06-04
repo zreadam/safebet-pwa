@@ -602,8 +602,9 @@ export default function MatchDetailPage() {
   const isDone = match.state === "done"
   const isSoon = match.state === "soon"
 
-  // "Tous" visible dès qu'on a des cotes (allBets API-Football ou detailedOdds)
-  const hasRealOdds = allBets.length > 0 || !!detailedOdds
+  // "Tous" visible pour tous les matchs apf- (API-Football) même si allBets est vide
+  const isApfMatch  = match.id.startsWith("apf-")
+  const hasRealOdds = allBets.length > 0 || !!detailedOdds || isApfMatch
   const hasTeamData = !!(formHome || formAway || h2h)
   const hasEvents   = events && events.length > 0
   const hasLineups  = lineups && lineups.length > 0
@@ -758,31 +759,55 @@ export default function MatchDetailPage() {
           </div>
         )
       }
-      // Afficher TOUS les marchés retournés par l'API, traduits en français
+
+      // Si allBets disponibles (API-Football odds endpoint) → tous les marchés bruts
+      if (allBets.length > 0) {
+        return (
+          <div className="flex flex-col gap-3 pb-2">
+            <p className="text-[11px] text-[var(--fg-3)] px-1">
+              {allBets.length} marchés disponibles
+            </p>
+            {allBets.map(bet => {
+              const mkt: OddsRow = {
+                key: `api-${bet.id}`,
+                label: BET_NAMES[bet.name] ?? bet.name,
+                outcomes: bet.values.map(v => ({
+                  key: v.value,
+                  label: translateValue(v.value),
+                  price: parseFloat(v.odd) || 1.01,
+                })),
+              }
+              return (
+                <MarketBlock key={mkt.key} market={mkt} selectedKey={selectedKey} onSelect={o => handleMarketSelect(mkt, o)} />
+              )
+            })}
+          </div>
+        )
+      }
+
+      // Fallback : afficher tous les marchés construits depuis detailedOdds
+      const allMarketsFromOdds = [
+        ...resultMarkets,
+        ...goalMarkets,
+        ...halfMarkets,
+        ...exactScoreMarkets,
+      ]
+      if (allMarketsFromOdds.length === 0) {
+        return (
+          <div className="text-center py-10 text-[var(--fg-3)] text-[13px]">
+            <i className="ti ti-lock text-[32px] block mb-2" />
+            Marchés détaillés non disponibles pour ce match
+          </div>
+        )
+      }
       return (
         <div className="flex flex-col gap-3 pb-2">
           <p className="text-[11px] text-[var(--fg-3)] px-1">
-            {allBets.length} marchés disponibles via le bookmaker
+            {allMarketsFromOdds.length} marchés disponibles
           </p>
-          {allBets.map(bet => {
-            const mkt: OddsRow = {
-              key: `api-${bet.id}`,
-              label: BET_NAMES[bet.name] ?? bet.name,
-              outcomes: bet.values.map(v => ({
-                key: v.value,
-                label: translateValue(v.value),
-                price: parseFloat(v.odd) || 1.01,
-              })),
-            }
-            return (
-              <MarketBlock
-                key={mkt.key}
-                market={mkt}
-                selectedKey={selectedKey}
-                onSelect={o => handleMarketSelect(mkt, o)}
-              />
-            )
-          })}
+          {allMarketsFromOdds.map(mkt => (
+            <MarketBlock key={mkt.key} market={mkt} selectedKey={selectedKey} onSelect={o => handleMarketSelect(mkt, o)} />
+          ))}
         </div>
       )
     }
@@ -1153,8 +1178,8 @@ export default function MatchDetailPage() {
           )}
           {isSoon && (
             <span className="px-3 py-1 rounded-full bg-[rgba(255,255,255,0.18)] text-white text-[12px] font-semibold">
-              {new Date(match.kickoff).toLocaleString("fr-FR", {
-                day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+              {new Date(match.kickoff).toLocaleTimeString("fr-FR", {
+                hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris"
               })}
             </span>
           )}
