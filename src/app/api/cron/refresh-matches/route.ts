@@ -2,10 +2,10 @@ import { NextResponse } from "next/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 
 /**
- * Cron job — tourne à 6h00 heure de Paris (04:00 UTC)
- * Force le refresh de tous les matchs + cotes pour la journée.
- * 1 seul appel API-Football (aujourd'hui uniquement)
- * Sécurisé par CRON_SECRET.
+ * Cron job — 3h00 heure de Paris (01:00 UTC)
+ * - The Odds API  : fetch toutes compétitions (retourne J à J+7 automatiquement)
+ * - API-Football  : fetch aujourd'hui + J+1 + J+2 (3 appels max)
+ * - Résultat stocké dans Supabase, servi toute la journée sans appel supplémentaire
  */
 
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
@@ -48,8 +48,13 @@ function makeTeamCode(name: string): string {
   return words.map(w => w[0]).join("").slice(0, 3).toUpperCase()
 }
 
+function addDays(date: Date, days: number): string {
+  const d = new Date(date)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 export async function GET(req: Request) {
-  // Vérification du secret Vercel Cron
   const authHeader = req.headers.get("authorization")
   if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -61,11 +66,12 @@ export async function GET(req: Request) {
   )
 
   const now = new Date()
-  const stats = { odds: 0, football: 0, errors: [] as string[] }
+  const stats = { odds: 0, football: 0, days_fetched: [] as string[], errors: [] as string[] }
 
-  console.log(`[cron] refresh-matches démarré à ${now.toISOString()}`)
+  console.log(`[cron 3h] refresh-matches démarré à ${now.toISOString()}`)
 
-  // ── 1. The Odds API (cotes des compétitions) ─────────────────────
+  // ── 1. The Odds API ──────────────────────────────────────────────
+  // Retourne automatiquement J à J+7 pour chaque compétition
   if (ODDS_API_KEY) {
     const fetched: object[] = []
     await Promise.all(
@@ -81,7 +87,7 @@ export async function GET(req: Request) {
           if (!Array.isArray(data)) return
           const meta = COMP_META[code]
 
-          for (const event of data.slice(0, 15)) {
+          for (const event of data.slice(0, 20)) {
             const bkm      = event.bookmakers?.[0]
             const h2h      = bkm?.markets?.find((m: { key: string }) => m.key === "h2h")
             const outcomes = h2h?.outcomes ?? []
@@ -114,65 +120,99 @@ export async function GET(req: Request) {
     }
   }
 
-  // ── 2. API-Football — aujourd'hui UNIQUEMENT (1 seul appel) ──────
+  // ── 2. API-Football — aujourd'hui + J+1 + J+2 (3 appels) ────────
   if (FOOTBALL_API_KEY) {
-    try {
-      const today = now.toISOString().slice(0, 10)
-      const res   = await fetch(
-        `https://v3.football.api-sports.io/fixtures?date=${today}`,
-        { headers: { "x-apisports-key": FOOTBALL_API_KEY }, cache: "no-store" }
-      )
-      if (res.ok) {
+    for (let i = 0; i <= 2; i++) {
+      const dateStr = addDays(now, i)
+      try {
+        const res = await fetch(
+          `https://v3.football.api-sports.io/fixtures?date=${dateStr}`,
+          { headers: { "x-apisports-key": FOOTBALL_API_KEY }, cache: "no-store" }
+        )
+        if (!res.ok) continue
         const data = await res.json()
-        if (!data.errors?.access) {
-          const friendly: object[] = []
-          for (const f of data.response ?? []) {
-            const leagueName: string = f.league?.name ?? ""
-            const country: string   = f.league?.country ?? ""
-            if (
-              leagueName !== "Friendlies" || country !== "World" ||
-              /U\d{2}|Women|W\b/i.test(`${f.teams?.home?.name} ${f.teams?.away?.name}`)
-            ) continue
 
-            const statusShort = f.fixture.status?.short ?? "NS"
-            const state = ["FT","AET","PEN"].includes(statusShort) ? "done"
-              : ["1H","2H","HT","ET"].includes(statusShort) ? "live" : "soon"
-
-            friendly.push({
-              id: `apf-${f.fixture.id}`,
-              competition: "AMI",
-              competition_name: "Matchs amicaux",
-              competition_color: "#6B7280",
-              home_team: f.teams.home.name,
-              away_team: f.teams.away.name,
-              home_team_code: makeTeamCode(f.teams.home.name),
-              away_team_code: makeTeamCode(f.teams.away.name),
-              home_score: f.goals?.home ?? null,
-              away_score: f.goals?.away ?? null,
-              state,
-              kickoff: f.fixture.date,
-              minute: f.fixture.status?.elapsed ? `${f.fixture.status.elapsed}'` : null,
-              odds_1: 2.00, odds_n: 3.25, odds_2: 3.50,
-              odds_updated_at: now.toISOString(),
-              is_premium: false,
-            })
-          }
-          if (friendly.length > 0) {
-            await admin.from("matches").upsert(friendly, { onConflict: "id" })
-            stats.football = friendly.length
-          }
+        // Compte suspendu → stocker un flag et arrêter
+        if (data.errors?.access || data.errors?.token) {
+          await admin.from("app_config").upsert(
+            { key: "football_api_status", value: "suspended", updated_at: now.toISOString() },
+            { onConflict: "key" }
+          ).catch(() => {})
+          stats.errors.push(`football: compte suspendu`)
+          break
         }
+
+        // Pas de matchs pour ce jour → stocker l'info
+        const responses = data.response ?? []
+        const friendly: object[] = []
+
+        for (const f of responses) {
+          const leagueName: string = f.league?.name ?? ""
+          const country: string   = f.league?.country ?? ""
+          if (
+            leagueName !== "Friendlies" || country !== "World" ||
+            /U\d{2}|Women|W\b/i.test(`${f.teams?.home?.name} ${f.teams?.away?.name}`)
+          ) continue
+
+          const statusShort = f.fixture.status?.short ?? "NS"
+          const state = ["FT","AET","PEN"].includes(statusShort) ? "done"
+            : ["1H","2H","HT","ET"].includes(statusShort) ? "live" : "soon"
+
+          friendly.push({
+            id: `apf-${f.fixture.id}`,
+            competition: "AMI",
+            competition_name: "Matchs amicaux",
+            competition_color: "#6B7280",
+            home_team: f.teams.home.name,
+            away_team: f.teams.away.name,
+            home_team_code: makeTeamCode(f.teams.home.name),
+            away_team_code: makeTeamCode(f.teams.away.name),
+            home_score: f.goals?.home ?? null,
+            away_score: f.goals?.away ?? null,
+            state,
+            kickoff: f.fixture.date,
+            minute: f.fixture.status?.elapsed ? `${f.fixture.status.elapsed}'` : null,
+            odds_1: 2.00, odds_n: 3.25, odds_2: 3.50,
+            odds_updated_at: now.toISOString(),
+            is_premium: false,
+          })
+        }
+
+        if (friendly.length > 0) {
+          await admin.from("matches").upsert(friendly, { onConflict: "id" })
+          stats.football += friendly.length
+          stats.days_fetched.push(dateStr)
+        } else if (i > 0) {
+          // Stocker en base que ce jour n'a pas de données dispo
+          await admin.from("app_config").upsert(
+            { key: `no_matches_${dateStr}`, value: "true", updated_at: now.toISOString() },
+            { onConflict: "key" }
+          ).catch(() => {})
+        }
+      } catch (e) {
+        stats.errors.push(`football-${dateStr}: ${e}`)
       }
-    } catch (e) {
-      stats.errors.push(`football: ${e}`)
     }
   }
 
-  console.log(`[cron] terminé — odds:${stats.odds} football:${stats.football}`)
+  // Marquer l'API comme fonctionnelle si pas d'erreur suspension
+  if (!stats.errors.some(e => e.includes("suspendu"))) {
+    await admin.from("app_config").upsert(
+      { key: "football_api_status", value: "ok", updated_at: now.toISOString() },
+      { onConflict: "key" }
+    ).catch(() => {})
+  }
+
+  console.log(`[cron 3h] terminé — odds:${stats.odds} football:${stats.football} jours:${stats.days_fetched.join(",")}`)
+
   return NextResponse.json({
     ok: true,
     timestamp: now.toISOString(),
-    matches_fetched: { odds: stats.odds, football: stats.football },
+    matches_fetched: {
+      odds: stats.odds,
+      football: stats.football,
+      days: stats.days_fetched,
+    },
     errors: stats.errors,
   })
 }

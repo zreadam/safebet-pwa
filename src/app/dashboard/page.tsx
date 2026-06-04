@@ -510,8 +510,21 @@ export default function DashboardPage() {
                 ? [0, 1, 2].map(i => <MatchSkeleton key={i} />)
                 : filteredMatches.length === 0
                   ? (
-                    <div className="text-center py-10 text-[var(--fg-3)] text-[14px]">
-                      Aucun match {dayOffset === 0 ? "aujourd'hui" : "ce jour"} pour {activeComp === "all" ? "ces compétitions" : "cette compétition"}.
+                    <div className="flex flex-col items-center gap-3 py-10 text-center px-4">
+                      <div className="w-14 h-14 rounded-2xl bg-[var(--bg-3)] flex items-center justify-center">
+                        <i className="ti ti-calendar-off text-[28px] text-[var(--fg-3)]" />
+                      </div>
+                      {dayOffset === 0 ? (
+                        <>
+                          <p className="text-[15px] font-semibold text-[var(--fg-2)]">Aucun match aujourd'hui</p>
+                          <p className="text-[13px] text-[var(--fg-3)]">Les informations ne sont pas encore disponibles.<br />Reviens un peu plus tard.</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-[15px] font-semibold text-[var(--fg-2)]">Pas encore disponible</p>
+                          <p className="text-[13px] text-[var(--fg-3)]">Les matchs de cette journée ne sont pas encore annoncés.<br />Les informations seront disponibles prochainement.</p>
+                        </>
+                      )}
                     </div>
                   )
                   : filteredMatches.map(m => (
