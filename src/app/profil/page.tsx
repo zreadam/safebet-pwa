@@ -102,15 +102,43 @@ export default function ProfilPage() {
   const { profile, loading, refetch } = useProfile()
   const { signOut } = useAuth()
 
-  const [darkMode, setDarkMode]       = useState(false)
-  const [notifs, setNotifs]           = useState(true)
-  const [showSheet, setShowSheet]     = useState(false)
-  const [avatarUrl, setAvatarUrl]     = useState<string | null>(null)
-  const [uploading, setUploading]     = useState(false)
+  const [darkMode, setDarkMode]         = useState(false)
+  const [notifs, setNotifs]             = useState(true)
+  const [notifBets, setNotifBets]       = useState(true)
+  const [notifLeagues, setNotifLeagues] = useState(false)
+  const [notifMatches, setNotifMatches] = useState(true)
+  const [showSheet, setShowSheet]       = useState(false)
+  const [avatarUrl, setAvatarUrl]       = useState<string | null>(null)
+  const [uploading, setUploading]       = useState(false)
+  const [editingName, setEditingName]   = useState(false)
+  const [username, setUsername]         = useState("")
+  const [savingName, setSavingName]     = useState(false)
 
   useEffect(() => {
-    if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
+    if (profile) {
+      if (profile.avatar_url) setAvatarUrl(profile.avatar_url)
+      setUsername(profile.username || "")
+    }
   }, [profile])
+
+  async function saveName() {
+    if (!username.trim()) return
+    setSavingName(true)
+    try {
+      await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim() }),
+      })
+      refetch()
+      toast.success("Pseudo mis à jour !")
+    } catch {
+      toast.error("Erreur")
+    } finally {
+      setSavingName(false)
+      setEditingName(false)
+    }
+  }
 
   /* sync dark mode with actual html class */
   useEffect(() => {
@@ -185,9 +213,9 @@ export default function ProfilPage() {
           {/* ── Avatar + identity ── */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
-              {/* Avatar */}
+              {/* Avatar — sans liseré, crayon transparent */}
               <button onClick={() => setShowSheet(true)} className="relative w-[88px] h-[88px]">
-                <div className="w-[88px] h-[88px] rounded-full overflow-hidden shadow-lg border-2 border-[var(--emerald-500)]">
+                <div className="w-[88px] h-[88px] rounded-full overflow-hidden shadow-lg">
                   {avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={avatarUrl} alt="avatar"
@@ -200,9 +228,9 @@ export default function ProfilPage() {
                     </div>
                   )}
                 </div>
-                {/* Rond crayon */}
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-[var(--emerald-500)]
-                                rounded-full flex items-center justify-center shadow-md border-2 border-[var(--bg-1)]">
+                {/* Rond crayon transparent */}
+                <div className="absolute bottom-0 right-0 w-8 h-8 bg-black/30 backdrop-blur-sm
+                                rounded-full flex items-center justify-center border border-white/20">
                   {uploading
                     ? <i className="ti ti-loader-2 text-white text-[13px] animate-spin" />
                     : <i className="ti ti-pencil text-white text-[13px]" />}
@@ -217,9 +245,36 @@ export default function ProfilPage() {
               </>
             ) : (
               <>
-                <p className="text-[20px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
-                  {profile?.username ?? "Utilisateur"}
-                </p>
+                {/* Nom éditable */}
+                {editingName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      autoFocus
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false) }}
+                      maxLength={20}
+                      className="text-[18px] font-bold text-center bg-[var(--bg-2)] border border-[var(--emerald-500)]
+                                 rounded-xl px-3 py-1 text-[var(--fg-1)] outline-none w-40"
+                    />
+                    <button onClick={saveName} disabled={savingName}
+                            className="w-8 h-8 rounded-full bg-[var(--emerald-500)] flex items-center justify-center">
+                      {savingName
+                        ? <i className="ti ti-loader-2 text-white text-xs animate-spin" />
+                        : <i className="ti ti-check text-white text-xs" />}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-[20px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
+                      {profile?.username ?? "Utilisateur"}
+                    </p>
+                    <button onClick={() => setEditingName(true)}
+                            className="w-7 h-7 rounded-full bg-black/20 flex items-center justify-center">
+                      <i className="ti ti-pencil text-[var(--fg-3)] text-[12px]" />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <span className={cn(
                     "text-[11px] font-bold px-[10px] py-[4px] rounded-full",
@@ -301,12 +356,6 @@ export default function ProfilPage() {
                 toggle={{ value: darkMode, onChange: toggleDark }}
               />
               <SettingRow
-                icon="ti-bell"
-                label="Notifications"
-                sub="Alertes matchs et résultats"
-                toggle={{ value: notifs, onChange: setNotifs }}
-              />
-              <SettingRow
                 icon="ti-world"
                 label="Langue"
                 sub="Langue de l'interface"
@@ -317,6 +366,27 @@ export default function ProfilPage() {
                 label="Abonnement"
                 sub={isPremium ? "Tu es Premium ✨" : "Passe au Premium"}
                 href="/premium"
+              />
+              {/* Notifications — sous Abonnement */}
+              <SettingRow
+                icon="ti-bell"
+                label="Résultats de paris"
+                toggle={{ value: notifBets, onChange: setNotifBets }}
+              />
+              <SettingRow
+                icon="ti-star"
+                label="Quêtes disponibles"
+                toggle={{ value: notifs, onChange: setNotifs }}
+              />
+              <SettingRow
+                icon="ti-users"
+                label="Activité des ligues"
+                toggle={{ value: notifLeagues, onChange: setNotifLeagues }}
+              />
+              <SettingRow
+                icon="ti-calendar"
+                label="Rappels avant match"
+                toggle={{ value: notifMatches, onChange: setNotifMatches }}
               />
               <SettingRow
                 icon="ti-logout"
