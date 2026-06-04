@@ -120,6 +120,16 @@ export default function PremiumPage() {
     }
   }
 
+  async function handleManageStripe() {
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+    } catch {
+      toast.error("Impossible d'accéder au portail Stripe")
+    }
+  }
+
   async function handleSubscribe(plan: "monthly" | "season") {
     setLoadingPlan(plan)
     try {
@@ -152,13 +162,24 @@ export default function PremiumPage() {
             Toutes les fonctionnalités sont débloquées.
           </p>
         </div>
-        <button
-          onClick={() => router.push("/dashboard")}
-          className="w-full py-4 rounded-[var(--radius-btn)] bg-[var(--emerald-500)]
-                     text-white font-bold text-[16px] [font-family:var(--font-display)]
-                     hover:bg-[var(--emerald-600)] active:scale-[.98] transition-all">
-          Retour à l&apos;accueil
-        </button>
+        <div className="w-full flex flex-col gap-3">
+          <button
+            onClick={handleManageStripe}
+            className="w-full py-4 rounded-[var(--radius-btn)]
+                       bg-gradient-to-r from-[var(--amber-400)] to-[var(--amber-500)]
+                       text-white font-bold text-[16px] [font-family:var(--font-display)]
+                       flex items-center justify-center gap-2 active:scale-[.98] transition-all">
+            <i className="ti ti-credit-card text-[18px]" />
+            Gérer mon abonnement
+          </button>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="w-full py-4 rounded-[var(--radius-btn)] bg-[var(--emerald-500)]
+                       text-white font-bold text-[16px] [font-family:var(--font-display)]
+                       hover:bg-[var(--emerald-600)] active:scale-[.98] transition-all">
+            Retour à l&apos;accueil
+          </button>
+        </div>
       </div>
     )
   }
