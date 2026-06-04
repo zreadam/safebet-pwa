@@ -11,22 +11,19 @@ import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
-const AVATAR_COLORS = [
-  "#10B981","#F59E0B","#3B82F6","#EF4444","#8B5CF6",
-  "#EC4899","#14B8A6","#F97316","#64748B","#0EA5E9",
-]
-
+/* ── Avatars pixel art ─────────────────────────────────────── */
 const PIXEL_AVATARS = [
-  { id: "r9",          label: "Ronaldo R9",    src: "/avatars/r9.png" },
-  { id: "ronaldinho",  label: "Ronaldinho",    src: "/avatars/ronaldinho.png" },
-  { id: "zidane",      label: "Zidane",        src: "/avatars/zidane.png" },
-  { id: "beckham",     label: "Beckham",       src: "/avatars/beckam.png" },
-  { id: "luis-enrique",label: "Luis Enrique",  src: "/avatars/luis-enrique.png" },
-  { id: "guardiola",   label: "Guardiola",     src: "/avatars/guardiola.png" },
-  { id: "mbappe",      label: "Mbappé",        src: "/avatars/mbappe.png" },
-  { id: "yamal",       label: "Lamine Yamal",  src: "/avatars/yamal.png" },
+  { id: "r9",          label: "Ronaldo R9",   src: "/avatars/r9.png" },
+  { id: "ronaldinho",  label: "Ronaldinho",   src: "/avatars/ronaldinho.png" },
+  { id: "zidane",      label: "Zidane",       src: "/avatars/zidane.png" },
+  { id: "beckham",     label: "Beckham",      src: "/avatars/beckam.png" },
+  { id: "luis-enrique",label: "Luis Enrique", src: "/avatars/luis-enrique.png" },
+  { id: "guardiola",   label: "Guardiola",    src: "/avatars/guardiola.png" },
+  { id: "mbappe",      label: "Mbappé",       src: "/avatars/mbappe.png" },
+  { id: "yamal",       label: "Yamal",        src: "/avatars/yamal.png" },
 ]
 
+/* ── Toggle ────────────────────────────────────────────────── */
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
@@ -45,6 +42,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
   )
 }
 
+/* ── Section ────────────────────────────────────────────────── */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
@@ -58,6 +56,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+/* ── SettingRow ─────────────────────────────────────────────── */
 function SettingRow({ icon, label, children, danger }: {
   icon: string; label: string; children?: React.ReactNode; danger?: boolean
 }) {
@@ -74,28 +73,27 @@ function SettingRow({ icon, label, children, danger }: {
   )
 }
 
+/* ── Page ───────────────────────────────────────────────────── */
 export default function ParametresPage() {
   const router = useRouter()
   const { profile, refetch } = useProfile()
   const { signOut } = useAuth()
 
-  const [username, setUsername] = useState("")
-  const [avatarColor, setAvatarColor] = useState("#10B981")
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [username, setUsername]         = useState("")
+  const [avatarColor, setAvatarColor]   = useState("#10B981")
+  const [avatarUrl, setAvatarUrl]       = useState<string | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const [savingProfile, setSavingProfile] = useState(false)
+  const [savingProfile, setSavingProfile]   = useState(false)
+  const [showSheet, setShowSheet]       = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteLoading, setDeleteLoading]   = useState(false)
 
-  const [notifBets, setNotifBets] = useState(true)
-  const [notifQuests, setNotifQuests] = useState(true)
+  const [notifBets,    setNotifBets]    = useState(true)
+  const [notifQuests,  setNotifQuests]  = useState(true)
   const [notifLeagues, setNotifLeagues] = useState(false)
   const [notifMatches, setNotifMatches] = useState(true)
-
   const [pushSupported, setPushSupported] = useState(false)
-  const [pushGranted, setPushGranted] = useState(false)
-  const [showAvatarSheet, setShowAvatarSheet] = useState(false)
-
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [pushGranted,   setPushGranted]   = useState(false)
 
   useEffect(() => {
     if (profile) {
@@ -105,14 +103,23 @@ export default function ParametresPage() {
     }
   }, [profile])
 
+  useEffect(() => {
+    setPushSupported("Notification" in window && "serviceWorker" in navigator)
+    setPushGranted(Notification.permission === "granted")
+  }, [])
+
+  const initials = username ? username.slice(0, 2).toUpperCase() : "??"
+
+  /* upload photo perso */
   const handlePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingPhoto(true)
+    setShowSheet(false)
     try {
       const fd = new FormData()
       fd.append("file", file)
-      const res = await fetch("/api/profile/avatar", { method: "POST", body: fd })
+      const res  = await fetch("/api/profile/avatar", { method: "POST", body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setAvatarUrl(data.url)
@@ -122,15 +129,10 @@ export default function ParametresPage() {
       toast.error(err instanceof Error ? err.message : "Erreur upload")
     } finally {
       setUploadingPhoto(false)
-      // L'input overlay est recréé à chaque render, pas besoin de reset manuel
     }
   }, [refetch])
 
-  useEffect(() => {
-    setPushSupported("Notification" in window && "serviceWorker" in navigator)
-    setPushGranted(Notification.permission === "granted")
-  }, [])
-
+  /* sauvegarder profil */
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
     setSavingProfile(true)
@@ -155,16 +157,12 @@ export default function ParametresPage() {
     if (!pushSupported) return
     const perm = await Notification.requestPermission()
     setPushGranted(perm === "granted")
-    if (perm === "granted") {
-      toast.success("Notifications activées !")
-    } else {
-      toast.error("Notifications refusées")
-    }
+    perm === "granted" ? toast.success("Notifications activées !") : toast.error("Notifications refusées")
   }
 
   async function handleManageStripe() {
     try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" })
+      const res  = await fetch("/api/stripe/portal", { method: "POST" })
       const data = await res.json()
       if (data.url) window.location.href = data.url
     } catch {
@@ -193,16 +191,14 @@ export default function ParametresPage() {
     }
   }
 
-  const initials = username
-    ? username.slice(0, 2).toUpperCase()
-    : "??"
-
   return (
     <AppShell>
       <div className="px-4 pt-6 pb-8">
+
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => router.back()} className="w-9 h-9 rounded-xl bg-[var(--color-bg-card)] flex items-center justify-center">
+          <button onClick={() => router.back()}
+                  className="w-9 h-9 rounded-xl bg-[var(--color-bg-card)] flex items-center justify-center">
             <i className="ti ti-arrow-left text-lg text-[var(--color-text-primary)]" />
           </button>
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Paramètres</h1>
@@ -212,17 +208,19 @@ export default function ParametresPage() {
         <Section title="Mon profil">
           <form onSubmit={handleSaveProfile}>
             <div className="px-4 pt-4 pb-3 space-y-4">
-              {/* Avatar — tap pour ouvrir le sélecteur */}
+
+              {/* Avatar */}
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={() => setShowAvatarSheet(true)}
-                  className="relative flex-shrink-0 w-16 h-16"
+                  onClick={() => setShowSheet(true)}
+                  className="relative w-16 h-16 flex-shrink-0"
                 >
                   <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[var(--color-brand-primary)]">
                     {avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover"
+                      <img src={avatarUrl} alt="avatar"
+                           className="w-full h-full object-cover"
                            style={{ imageRendering: "pixelated" }} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-white font-bold text-xl"
@@ -231,21 +229,23 @@ export default function ParametresPage() {
                       </div>
                     )}
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--color-brand-primary)]
-                                  flex items-center justify-center shadow-md">
+                  {/* Rond crayon */}
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full
+                                  bg-[var(--color-brand-primary)] flex items-center justify-center shadow">
                     <i className="ti ti-pencil text-white text-[11px]" />
                   </div>
                 </button>
+
                 <div>
-                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">Photo de profil</p>
-                  <button type="button" onClick={() => setShowAvatarSheet(true)}
-                          className="text-xs text-[var(--color-brand-primary)] mt-0.5 font-medium">
-                    Changer d'avatar →
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">Avatar</p>
+                  <button type="button" onClick={() => setShowSheet(true)}
+                          className="text-xs text-[var(--color-brand-primary)] font-medium mt-0.5">
+                    Changer d&apos;avatar →
                   </button>
                 </div>
               </div>
 
-              {/* Username */}
+              {/* Pseudo */}
               <div>
                 <label className="text-xs text-[var(--color-text-secondary)] mb-1 block">Pseudo</label>
                 <input
@@ -254,7 +254,9 @@ export default function ParametresPage() {
                   onChange={e => setUsername(e.target.value)}
                   maxLength={20}
                   placeholder="Ton pseudo"
-                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10
+                             text-[var(--color-text-primary)] text-sm
+                             focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
                 />
               </div>
 
@@ -285,10 +287,9 @@ export default function ParametresPage() {
           </SettingRow>
           {pushSupported && !pushGranted && (
             <div className="px-4 py-3">
-              <button
-                onClick={handleRequestPush}
-                className="w-full py-2.5 rounded-xl border border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] text-sm font-semibold"
-              >
+              <button onClick={handleRequestPush}
+                      className="w-full py-2.5 rounded-xl border border-[var(--color-brand-primary)]
+                                 text-[var(--color-brand-primary)] text-sm font-semibold">
                 <i className="ti ti-bell-ringing mr-2" />
                 Activer les notifications push
               </button>
@@ -302,39 +303,31 @@ export default function ParametresPage() {
             <span className={cn(
               "text-xs font-bold px-2 py-1 rounded-full",
               profile?.tier === "premium"
-                ? "bg-[var(--amber-400)]/20 text-[var(--amber-400)]"
+                ? "bg-amber-400/20 text-amber-400"
                 : "bg-white/10 text-[var(--color-text-secondary)]"
             )}>
               {profile?.tier === "premium" ? "PREMIUM" : "FREE"}
             </span>
           </SettingRow>
-
           {profile?.tier !== "premium" ? (
             <div className="px-4 py-3">
-              <button
-                onClick={() => router.push("/premium")}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[var(--amber-400)] to-[var(--amber-500)] text-white text-sm font-bold"
-              >
-                <i className="ti ti-crown mr-2" />
-                Passer Premium — 4,99€/mois
+              <button onClick={() => router.push("/premium")}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-white text-sm font-bold">
+                <i className="ti ti-crown mr-2" />Passer Premium — 4,99€/mois
               </button>
             </div>
           ) : (
             <div className="px-4 py-3 space-y-2">
-              {/* Bouton Stripe portal — bien visible */}
-              <button
-                onClick={handleManageStripe}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl
-                           bg-gradient-to-r from-[var(--amber-400)] to-[var(--amber-500)]
-                           text-white font-bold text-sm active:scale-[.98] transition-all"
-              >
+              <button onClick={handleManageStripe}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl
+                                 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-bold text-sm">
                 <div className="flex items-center gap-2">
                   <i className="ti ti-credit-card text-lg" />
                   <span>Gérer mon abonnement</span>
                 </div>
                 <i className="ti ti-external-link text-base opacity-80" />
               </button>
-              <p className="text-[11px] text-[var(--color-text-secondary)] text-center px-1">
+              <p className="text-[11px] text-[var(--color-text-secondary)] text-center">
                 Modifier, mettre en pause ou annuler via Stripe
               </p>
             </div>
@@ -343,17 +336,13 @@ export default function ParametresPage() {
 
         {/* ── COMPTE ── */}
         <Section title="Compte">
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-3 px-4 py-3.5 w-full text-left hover:bg-white/5"
-          >
+          <button onClick={handleSignOut}
+                  className="flex items-center gap-3 px-4 py-3.5 w-full text-left hover:bg-white/5">
             <i className="ti ti-logout text-lg text-[var(--color-text-secondary)]" />
             <span className="text-sm font-medium text-[var(--color-text-primary)]">Se déconnecter</span>
           </button>
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-3 px-4 py-3.5 w-full text-left hover:bg-white/5"
-          >
+          <button onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-3 px-4 py-3.5 w-full text-left hover:bg-white/5">
             <i className="ti ti-trash text-lg text-red-400" />
             <span className="text-sm font-medium text-red-400">Supprimer mon compte</span>
           </button>
@@ -363,89 +352,45 @@ export default function ParametresPage() {
         <div className="flex flex-col items-center gap-2 mt-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Safebet" className="w-12 h-12 object-contain opacity-80" />
-          <p className="text-center text-xs text-[var(--color-text-secondary)]">
-            Safebet v1.0 · Fabriqué avec ❤️
-          </p>
+          <p className="text-center text-xs text-[var(--color-text-secondary)]">Safebet v1.0 · Fabriqué avec ❤️</p>
         </div>
       </div>
 
-      {/* Delete confirm modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end">
-          <div className="w-full bg-[var(--color-bg-card)] rounded-t-3xl p-6 space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center mx-auto">
-              <i className="ti ti-alert-triangle text-red-400 text-2xl" />
-            </div>
-            <h3 className="text-lg font-bold text-[var(--color-text-primary)] text-center">
-              Supprimer le compte ?
-            </h3>
-            <p className="text-sm text-[var(--color-text-secondary)] text-center">
-              Cette action est irréversible. Toutes tes données, paris et solde seront supprimés définitivement.
-            </p>
-            <button
-              onClick={handleDeleteAccount}
-              disabled={deleteLoading}
-              className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold disabled:opacity-50"
-            >
-              {deleteLoading ? "Suppression…" : "Oui, supprimer mon compte"}
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="w-full py-3.5 rounded-2xl bg-white/10 text-[var(--color-text-primary)] font-semibold"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Bottom sheet sélecteur d'avatar ── */}
-      {showAvatarSheet && (
+      {/* ── Bottom sheet avatar ────────────────────────────────── */}
+      {showSheet && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowAvatarSheet(false)} />
-
-          {/* Sheet */}
-          <div className="relative bg-[var(--color-bg-card)] rounded-t-3xl p-5 pb-8">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowSheet(false)} />
+          <div className="relative bg-[#1a1f2e] rounded-t-3xl px-4 pt-4 pb-8">
             {/* Handle */}
-            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
 
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-[var(--color-text-primary)]">Choisis ton avatar</h3>
-              <button onClick={() => setShowAvatarSheet(false)}
+              <p className="text-base font-bold text-white">Choisis ton avatar</p>
+              <button onClick={() => setShowSheet(false)}
                       className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                <i className="ti ti-x text-sm text-[var(--color-text-primary)]" />
+                <i className="ti ti-x text-white text-sm" />
               </button>
             </div>
 
             {/* Grille avatars */}
-            <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-4 gap-3 mb-5">
               {PIXEL_AVATARS.map(av => (
                 <button
                   key={av.id}
                   type="button"
-                  onClick={() => {
-                    setAvatarUrl(av.src)
-                    setShowAvatarSheet(false)
-                  }}
+                  onClick={() => { setAvatarUrl(av.src); setShowSheet(false) }}
                   className="flex flex-col items-center gap-1"
                 >
                   <div className={cn(
                     "w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all",
-                    avatarUrl === av.src
-                      ? "border-[var(--color-brand-primary)] scale-105"
-                      : "border-transparent"
+                    avatarUrl === av.src ? "border-[var(--color-brand-primary)] scale-105" : "border-transparent opacity-70"
                   )}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={av.src} alt={av.label} className="w-full h-full object-cover"
+                    <img src={av.src} alt={av.label}
+                         className="w-full h-full object-cover"
                          style={{ imageRendering: "pixelated" }} />
                   </div>
-                  <span className={cn(
-                    "text-[9px] font-semibold text-center leading-tight",
-                    avatarUrl === av.src ? "text-[var(--color-brand-primary)]" : "text-[var(--color-text-secondary)]"
-                  )}>
-                    {av.label}
-                  </span>
+                  <span className="text-[9px] text-white/60 text-center leading-tight">{av.label}</span>
                 </button>
               ))}
             </div>
@@ -453,27 +398,23 @@ export default function ParametresPage() {
             {/* Séparateur */}
             <div className="flex items-center gap-3 mb-4">
               <div className="flex-1 h-px bg-white/10" />
-              <span className="text-xs text-[var(--color-text-secondary)]">ou</span>
+              <span className="text-xs text-white/40">ou</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
 
-            {/* Upload photo perso */}
-            <div className="relative w-full">
-              <div className="w-full py-3 rounded-2xl border border-white/20 flex items-center justify-center gap-2">
-                {uploadingPhoto
-                  ? <i className="ti ti-loader-2 text-[var(--color-brand-primary)] animate-spin" />
-                  : <i className="ti ti-camera text-[var(--color-brand-primary)]" />}
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  {uploadingPhoto ? "Envoi en cours…" : "Importer ma propre photo"}
+            {/* Upload photo — input file iOS-safe */}
+            <div className="relative w-full h-12">
+              <div className="absolute inset-0 rounded-2xl border border-white/20 flex items-center justify-center gap-2 pointer-events-none">
+                <i className={cn("ti text-[var(--color-brand-primary)] text-lg",
+                   uploadingPhoto ? "ti-loader-2 animate-spin" : "ti-photo")} />
+                <span className="text-sm font-semibold text-white">
+                  {uploadingPhoto ? "Envoi…" : "Importer ma propre photo"}
                 </span>
               </div>
               <input
                 type="file"
                 accept="image/*"
-                onChange={async (e) => {
-                  await handlePhotoChange(e)
-                  setShowAvatarSheet(false)
-                }}
+                onChange={handlePhotoChange}
                 disabled={uploadingPhoto}
                 style={{
                   position: "absolute",
@@ -486,6 +427,31 @@ export default function ParametresPage() {
                 }}
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal suppression compte ───────────────────────────── */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end">
+          <div className="w-full bg-[var(--color-bg-card)] rounded-t-3xl p-6 space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center mx-auto">
+              <i className="ti ti-alert-triangle text-red-400 text-2xl" />
+            </div>
+            <h3 className="text-lg font-bold text-[var(--color-text-primary)] text-center">
+              Supprimer le compte ?
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] text-center">
+              Cette action est irréversible. Toutes tes données seront supprimées définitivement.
+            </p>
+            <button onClick={handleDeleteAccount} disabled={deleteLoading}
+                    className="w-full py-3.5 rounded-2xl bg-red-500 text-white font-bold disabled:opacity-50">
+              {deleteLoading ? "Suppression…" : "Oui, supprimer mon compte"}
+            </button>
+            <button onClick={() => setShowDeleteConfirm(false)}
+                    className="w-full py-3.5 rounded-2xl bg-white/10 text-[var(--color-text-primary)] font-semibold">
+              Annuler
+            </button>
           </div>
         </div>
       )}
