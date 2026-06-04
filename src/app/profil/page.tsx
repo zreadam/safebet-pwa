@@ -153,6 +153,44 @@ export default function ProfilPage() {
     setPushGranted(Notification.permission === "granted")
   }, [])
 
+  function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4)
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/")
+    const rawData = window.atob(base64)
+    const arr = new Uint8Array(rawData.length)
+    for (let i = 0; i < rawData.length; i++) {
+      arr[i] = rawData.charCodeAt(i)
+    }
+    return arr.buffer as ArrayBuffer
+  }
+
+  async function subscribeToPush() {
+    const perm = await Notification.requestPermission()
+    if (perm !== "granted") {
+      toast.error("Notifications refusées")
+      return
+    }
+    setPushGranted(true)
+    toast.success("Notifications activées !")
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(
+          "BCjo75bYD0dyQ8wAcOTwCSXtlW_xcmdq2SMrJTlKnSrZQgWUXBIm8eFJRHgdO65zYzSf1tSGyCNNfA3LjObeeoU"
+        ),
+      })
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub.toJSON() }),
+      })
+    } catch (err) {
+      console.error("[push subscribe]", err)
+      toast.error("Erreur lors de l'abonnement push")
+    }
+  }
+
   async function saveName() {
     if (!username.trim()) return
     setSavingName(true)
@@ -431,12 +469,7 @@ export default function ProfilPage() {
               {pushSupported && !pushGranted && (
                 <div className="px-4 py-3">
                   <button
-                    onClick={async () => {
-                      const perm = await Notification.requestPermission()
-                      setPushGranted(perm === "granted")
-                      if (perm === "granted") toast.success("Notifications activées !")
-                      else toast.error("Notifications refusées")
-                    }}
+                    onClick={subscribeToPush}
                     className="w-full py-3 rounded-xl border border-[var(--emerald-500)]
                                text-[var(--emerald-500)] text-sm font-semibold flex items-center justify-center gap-2">
                     <i className="ti ti-bell-ringing text-base" />
