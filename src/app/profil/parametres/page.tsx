@@ -212,9 +212,7 @@ export default function ParametresPage() {
         <Section title="Mon profil">
           <form onSubmit={handleSaveProfile}>
             <div className="px-4 pt-4 pb-3 space-y-4">
-              {/* Avatar actuel + bouton upload */}
-              <div className="flex items-center gap-4">
-                {/* Avatar — tap pour ouvrir le sélecteur */}
+              {/* Avatar — tap pour ouvrir le sélecteur */}
               <div className="flex items-center gap-4">
                 <button
                   type="button"
