@@ -381,6 +381,41 @@ export default function ProfilPage() {
             </Link>
           )}
 
+          {/* ── Paramètres ── */}
+          <section>
+            <h2 className="text-[17px] font-semibold [font-family:var(--font-display)]
+                           text-[var(--fg-1)] tracking-tight mb-2">
+              Paramètres
+            </h2>
+            <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
+                            [box-shadow:var(--shadow-card)] overflow-hidden">
+              <SettingRow
+                icon="ti-moon"
+                label="Mode sombre"
+                sub="Changer l'apparence de l'app"
+                toggle={{ value: darkMode, onChange: toggleDark }}
+              />
+              <SettingRow
+                icon="ti-world"
+                label="Langue"
+                sub="Langue de l'interface"
+                rightText="Français"
+              />
+              <SettingRow
+                icon="ti-crown"
+                label="Abonnement"
+                sub={isPremium ? "Tu es Premium ✨" : "Passe au Premium"}
+                href="/premium"
+              />
+              <SettingRow
+                icon="ti-logout"
+                label="Déconnexion"
+                danger
+                onClick={signOut}
+              />
+            </div>
+          </section>
+
           {/* ── Notifications ── */}
           <section>
             <h2 className="text-[17px] font-semibold [font-family:var(--font-display)]
@@ -389,11 +424,10 @@ export default function ProfilPage() {
             </h2>
             <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
                             [box-shadow:var(--shadow-card)] overflow-hidden">
-              <SettingRow icon="ti-bell"    label="Résultats de paris"  toggle={{ value: notifBets,    onChange: setNotifBets }} />
-              <SettingRow icon="ti-star"    label="Quêtes disponibles"  toggle={{ value: notifs,       onChange: setNotifs }} />
-              <SettingRow icon="ti-users"   label="Activité des ligues" toggle={{ value: notifLeagues, onChange: setNotifLeagues }} />
-              <SettingRow icon="ti-calendar"label="Rappels avant match" toggle={{ value: notifMatches, onChange: setNotifMatches }} />
-              {/* Bouton activer push */}
+              <SettingRow icon="ti-bell"     label="Résultats de paris"  toggle={{ value: notifBets,    onChange: setNotifBets }} />
+              <SettingRow icon="ti-star"     label="Quêtes disponibles"  toggle={{ value: notifs,       onChange: setNotifs }} />
+              <SettingRow icon="ti-users"    label="Activité des ligues" toggle={{ value: notifLeagues, onChange: setNotifLeagues }} />
+              <SettingRow icon="ti-calendar" label="Rappels avant match" toggle={{ value: notifMatches, onChange: setNotifMatches }} />
               {pushSupported && !pushGranted && (
                 <div className="px-4 py-3">
                   <button
@@ -418,16 +452,6 @@ export default function ProfilPage() {
               )}
             </div>
           </section>
-
-          {/* ── Déconnexion ── */}
-          <button onClick={signOut}
-                  className="flex items-center gap-3 w-full px-4 py-3.5 rounded-[var(--radius-card)]
-                             bg-[var(--bg-1)] border border-[var(--border-light)] [box-shadow:var(--shadow-card)]">
-            <div className="w-9 h-9 rounded-[10px] bg-[#FEF2F2] flex items-center justify-center">
-              <i className="ti ti-logout text-[var(--error)] text-lg" />
-            </div>
-            <span className="text-[14px] font-medium text-[var(--error)]">Se déconnecter</span>
-          </button>
 
           {/* ── Legal note ── */}
           <p className="text-[11px] text-[var(--fg-3)] text-center pb-2">
