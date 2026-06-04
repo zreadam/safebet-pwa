@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
-const CACHE_TTL_MS = 2 * 60 * 1000 // 2 minutes
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 interface LiveMatch {
   id: number
@@ -17,8 +17,23 @@ interface LiveMatch {
 
 export async function GET() {
   const supabase = await createClient()
+  const now = new Date()
 
-  // Check Supabase cache first
+  /* ── 1. Porte d'entrée : y a-t-il des matchs en cours ou sur le point de démarrer ?
+     Si non → retourne vide sans consommer aucun appel API.
+  ──────────────────────────────────────────────────────────────────────────────── */
+  const soonThreshold = new Date(now.getTime() + 30 * 60_000).toISOString()
+  const { data: activeCheck } = await supabase
+    .from("matches")
+    .select("id")
+    .or(`state.eq.live,and(state.eq.soon,kickoff.lte.${soonThreshold})`)
+    .limit(1)
+
+  if (!activeCheck || activeCheck.length === 0) {
+    return NextResponse.json({ matches: [] })
+  }
+
+  /* ── 2. Cache Supabase (5 min) ─────────────────────────────────────────────── */
   const { data: cached } = await supabase
     .from("match_cache")
     .select("data, updated_at")
@@ -32,7 +47,7 @@ export async function GET() {
     }
   }
 
-  // Fetch live matches from API-Football
+  /* ── 3. Appel API-Football (uniquement si matchs actifs + cache expiré) ─────── */
   if (!FOOTBALL_API_KEY) {
     return NextResponse.json({ matches: [], error: "API key not configured" })
   }
@@ -74,6 +89,59 @@ export async function GET() {
       data: result,
       updated_at: new Date().toISOString(),
     })
+
+    // Persist live scores into the matches table so they survive quota exhaustion
+    if (matches.length > 0) {
+      try {
+        const now = new Date()
+        const { data: dbMatches } = await supabase
+          .from("matches")
+          .select("id, home_team, away_team, state, kickoff")
+          .gte("kickoff", new Date(now.getTime() - 4 * 3600_000).toISOString())
+          .lte("kickoff", now.toISOString())
+
+        const norm = (s: string) =>
+          s.toLowerCase()
+            .replace(/\b(fc|cf|sc|ac|afc|fk|sk)\b/g, "")
+            .replace(/[^a-z0-9]/g, "")
+
+        const fits = (api: string, db: string) => {
+          const a = norm(api), b = norm(db)
+          return a === b || (a.length >= 4 && (a.includes(b.slice(0, 4)) || b.includes(a.slice(0, 4))))
+        }
+
+        const updates: PromiseLike<unknown>[] = []
+
+        for (const lm of matches) {
+          const found = (dbMatches ?? []).find(
+            m => fits(lm.home, m.home_team) && fits(lm.away, m.away_team)
+          )
+          if (found) {
+            updates.push(
+              supabase.from("matches").update({
+                state: "live",
+                home_score: lm.home_score,
+                away_score: lm.away_score,
+                minute: lm.minute,
+                odds_updated_at: now.toISOString(),
+              }).eq("id", found.id).then(() => {})
+            )
+          }
+        }
+
+        // Mark matches not in live feed as done if kickoff > 100 min ago
+        const cutoff = new Date(now.getTime() - 100 * 60 * 1000).toISOString()
+        for (const m of (dbMatches ?? [])) {
+          if (m.state !== "live") continue
+          const stillLive = matches.some(lm => fits(lm.home, m.home_team) && fits(lm.away, m.away_team))
+          if (!stillLive && m.kickoff < cutoff) {
+            updates.push(supabase.from("matches").update({ state: "done" }).eq("id", m.id).then(() => {}))
+          }
+        }
+
+        await Promise.all(updates)
+      } catch { /* ne pas bloquer la réponse */ }
+    }
 
     return NextResponse.json(result)
   } catch {

@@ -4,14 +4,22 @@ import { createClient } from "@/lib/supabase/server"
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
-// Mapping leagueId keys to API-Football league IDs
+// Mapping leagueId keys → API-Football league IDs
+// Seules les compétitions avec un classement tabulaire sont listées ici.
 const LEAGUE_MAP: Record<string, number> = {
-  LIB: 13,
-  SUD: 14,
-  JPN: 98,
-  NOR: 103,
-  SWE: 113,
-  BRS: 72,
+  L1:   61,   // Ligue 1
+  PL:   39,   // Premier League
+  LIGA: 140,  // La Liga
+  BL:   78,   // Bundesliga
+  SA:   135,  // Serie A
+  ERE:  88,   // Eredivisie
+  LPT:  94,   // Liga Portugal
+  STL:  203,  // Süper Lig
+  UCL:  2,    // Ligue des Champions (phase de groupes)
+  EL:   3,    // Europa League
+  ECL:  848,  // Conference League
+  LIB:  13,   // Copa Libertadores
+  CA:   9,    // Copa América
 }
 
 interface StandingRow {

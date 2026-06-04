@@ -304,7 +304,8 @@ interface StandingRow {
 }
 
 const LEAGUE_MAP: Record<string, string> = {
-  LIB: "LIB", SUD: "SUD", JPN: "JPN", NOR: "NOR", SWE: "SWE", BRS: "BRS",
+  L1: "L1", PL: "PL", LIGA: "LIGA", BL: "BL", SA: "SA",
+  ERE: "ERE", LPT: "LPT", STL: "STL", LIB: "LIB",
 }
 
 function StandingsSheet({ leagueKey, leagueLabel, onClose }: { leagueKey: string; leagueLabel: string; onClose: () => void }) {
@@ -472,21 +473,56 @@ function MatchSkeleton() {
 
 /* ─────────────────────── COMPETITIONS ──────────────────────── */
 const COMPETITIONS = [
-  { key: "all", label: "Toutes",         emoji: "🌍" },
-  { key: "CDM", label: "Coupe du Monde", emoji: "🏆" },
-  { key: "AMI", label: "Amicaux",        emoji: "🤝" },
-  { key: "LIB", label: "Copa Lib.",      emoji: "🌎" },
-  { key: "SUD", label: "Copa Sud.",      emoji: "🌎" },
-  { key: "JPN", label: "J-League",       emoji: "🇯🇵" },
-  { key: "NOR", label: "Eliteserien",    emoji: "🇳🇴" },
-  { key: "SWE", label: "Allsvenskan",    emoji: "🇸🇪" },
-  { key: "BRS", label: "Brésil B",       emoji: "🇧🇷" },
-  { key: "CHI", label: "Chili",          emoji: "🇨🇱" },
-  { key: "CHN", label: "Chine",          emoji: "🇨🇳" },
-  { key: "FIN", label: "Finlande",       emoji: "🇫🇮" },
-  { key: "SWT", label: "Superettan",     emoji: "🇸🇪" },
-  { key: "SP2", label: "La Liga 2",      emoji: "🇪🇸" },
+  { key: "all",  label: "Toutes",                emoji: "🌍" },
+  // Ligues nationales
+  { key: "L1",   label: "Ligue 1",               emoji: "🇫🇷" },
+  { key: "PL",   label: "Premier League",         emoji: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { key: "LIGA", label: "La Liga",                emoji: "🇪🇸" },
+  { key: "BL",   label: "Bundesliga",             emoji: "🇩🇪" },
+  { key: "SA",   label: "Serie A",                emoji: "🇮🇹" },
+  { key: "ERE",  label: "Eredivisie",             emoji: "🇳🇱" },
+  { key: "LPT",  label: "Liga Portugal",          emoji: "🇵🇹" },
+  { key: "STL",  label: "Süper Lig",              emoji: "🇹🇷" },
+  // Coupes nationales
+  { key: "CDRF", label: "Coupe de France",        emoji: "🇫🇷" },
+  { key: "FAC",  label: "FA Cup",                 emoji: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { key: "CC",   label: "Carabao Cup",            emoji: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { key: "CDR",  label: "Copa del Rey",           emoji: "🇪🇸" },
+  { key: "SCES", label: "Supercoupe ESP",         emoji: "🇪🇸" },
+  { key: "DFBP", label: "DFB Pokal",              emoji: "🇩🇪" },
+  { key: "CI",   label: "Coppa Italia",           emoji: "🇮🇹" },
+  { key: "SCIT", label: "Supercoupe ITA",         emoji: "🇮🇹" },
+  { key: "TRCH", label: "Trophée Champions",      emoji: "🇫🇷" },
+  // UEFA
+  { key: "UCL",  label: "Ligue des Champions",    emoji: "⭐" },
+  { key: "EL",   label: "Europa League",          emoji: "🟠" },
+  { key: "ECL",  label: "Conference League",      emoji: "🟢" },
+  // Compétitions mondiales
+  { key: "CDM",  label: "Coupe du Monde",         emoji: "🏆" },
+  { key: "EURO", label: "Euro UEFA",              emoji: "🇪🇺" },
+  { key: "NL",   label: "Ligue des Nations",      emoji: "🇪🇺" },
+  { key: "CAN",  label: "CAN",                    emoji: "🌍" },
+  { key: "LIB",  label: "Copa Libertadores",      emoji: "🌎" },
+  { key: "CWC",  label: "Monde des clubs",        emoji: "🌐" },
+  { key: "CA",   label: "Copa América",           emoji: "🌎" },
+  { key: "CIC",  label: "Coupe Intercontinentale",emoji: "🌐" },
 ]
+
+/* ── Normalisation pour matching équipes API-Football ↔ Odds API ── */
+function normTeam(s: string) {
+  return s.toLowerCase()
+    .replace(/\b(fc|cf|sc|ac|afc|fk|sk)\b/g, "")
+    .replace(/[^a-z0-9]/g, "")
+}
+function teamsMatch(api: string, db: string) {
+  const a = normTeam(api), b = normTeam(db)
+  return a === b || (a.length >= 4 && (a.includes(b.slice(0, 4)) || b.includes(a.slice(0, 4))))
+}
+
+interface LiveScoreEntry {
+  id: number; home: string; away: string
+  home_score: number | null; away_score: number | null; minute: string | null
+}
 
 /* ─────────────────────── PAGE ───────────────────────────────── */
 export default function DashboardPage() {
@@ -501,6 +537,7 @@ export default function DashboardPage() {
   const [dayOffset, setDayOffset] = useState(0)
   const [betCounts, setBetCounts] = useState<Record<string, number>>({})
   const [standingsKey, setStandingsKey] = useState<string | null>(null)
+  const [liveScores, setLiveScores] = useState<LiveScoreEntry[]>([])
   const supabase = createClient()
 
   /* fetch matches + bet counts pour tri par popularité */
@@ -521,6 +558,19 @@ export default function DashboardPage() {
         setBetCounts(counts)
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /* poll livescores → enrichit les cartes de matchs en temps réel */
+  useEffect(() => {
+    function poll() {
+      fetch("/api/livescore")
+        .then(r => r.json())
+        .then(data => setLiveScores(data.matches ?? []))
+        .catch(() => {})
+    }
+    poll()
+    const iv = setInterval(poll, 5 * 60 * 1000)
+    return () => clearInterval(iv)
   }, [])
 
   /* fetch quests */
@@ -620,6 +670,20 @@ export default function DashboardPage() {
       : matchesForDay.filter(m => m.competition === activeComp)
   )
 
+  // Enrichir avec les scores live (API-Football) pour affichage immédiat
+  const enrichedMatches = filteredMatches.map(m => {
+    if (liveScores.length === 0) return m
+    const lm = liveScores.find(l => teamsMatch(l.home, m.home_team) && teamsMatch(l.away, m.away_team))
+    if (!lm) return m
+    return {
+      ...m,
+      state: "live" as const,
+      home_score: lm.home_score ?? undefined,
+      away_score: lm.away_score ?? undefined,
+      minute: lm.minute ?? m.minute,
+    }
+  })
+
   function prevDay() {
     const newDate = (() => { const d = new Date(); d.setDate(d.getDate() + dayOffset - 1); return d.toISOString().slice(0,10) })()
     if (availableDays.some(d => d <= newDate) || dayOffset > 0) setDayOffset(o => o - 1)
@@ -704,8 +768,10 @@ export default function DashboardPage() {
                                text-[var(--fg-1)] tracking-tight leading-tight">
                   {dayLabel}
                 </h2>
-                {dayOffset !== 0 && (
-                  <p className="text-[12px] text-[var(--fg-3)]">{selectedDate}</p>
+                {dayOffset >= 2 && (
+                  <p className="text-[12px] text-[var(--fg-3)]">
+                    {new Date(selectedDate + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" })}
+                  </p>
                 )}
               </div>
               <button
@@ -739,7 +805,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                   )
-                  : filteredMatches.map(m => (
+                  : enrichedMatches.map(m => (
                       <MatchCard
                         key={m.id}
                         match={m}

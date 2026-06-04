@@ -613,8 +613,8 @@ export default function MatchDetailPage() {
   const goalScorerBets = allBets.filter(b => [9, 10, 13].includes(b.id))
   const hasGoalScorer  = goalScorerBets.length > 0
   const tabs = isLive
-    ? ["Résultat live", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasEvents ? ["Événements"] : []), ...(hasLineups ? ["Compos"] : []), "Stats"]
-    : ["Résultat", "Buts", "Mi-temps", "Score exact", ...(hasRealOdds ? ["Tous"] : []), ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasLineups ? ["Compos"] : []), ...(hasGoalScorer ? ["Buteurs"] : []), "Stats"]
+    ? ["Résultat live", "Buts", "Mi-temps", "Score exact", "Tous", ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasEvents ? ["Événements"] : []), ...(hasLineups ? ["Compos"] : []), "Stats"]
+    : ["Résultat", "Buts", "Mi-temps", "Score exact", "Tous", ...(hasTeamData ? ["Équipes"] : []), ...(hasPredictions ? ["Prono"] : []), ...(hasLineups ? ["Compos"] : []), "Buteurs", "Stats"]
 
   const resultMarkets    = buildMarkets(match, detailedOdds)
   const goalMarkets      = buildGoalMarkets(match, detailedOdds)
