@@ -182,7 +182,6 @@ export default function ProfilPage() {
         body: JSON.stringify({ avatar_url: src }),
       })
       refetch()
-      toast.success("Avatar mis à jour !")
     } catch {
       toast.error("Erreur lors de la mise à jour")
     }
@@ -451,18 +450,14 @@ export default function ProfilPage() {
       {/* ── Crop modal ── */}
       {cropSrc && (
         <div className="fixed inset-0 z-[60] bg-black flex flex-col">
+          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-black/80">
             <button onClick={() => setCropSrc(null)}
-                    className="text-white/70 text-sm font-semibold">
+                    className="text-white/60 text-sm font-semibold">
               Annuler
             </button>
             <p className="text-white font-bold text-sm">Rogner la photo</p>
-            <button
-              onClick={confirmCrop}
-              disabled={uploading}
-              className="text-[var(--emerald-400)] font-bold text-sm disabled:opacity-50">
-              {uploading ? "Envoi…" : "Confirmer"}
-            </button>
+            <div className="w-16" />
           </div>
 
           {/* Zone de crop */}
@@ -480,17 +475,28 @@ export default function ProfilPage() {
             />
           </div>
 
-          {/* Slider zoom */}
-          <div className="px-6 py-4 bg-black/80 flex items-center gap-3">
-            <i className="ti ti-zoom-out text-white/50 text-lg" />
-            <input
-              type="range"
-              min={1} max={3} step={0.01}
-              value={zoom}
-              onChange={e => setZoom(Number(e.target.value))}
-              className="flex-1 accent-[var(--emerald-500)]"
-            />
-            <i className="ti ti-zoom-in text-white/50 text-lg" />
+          {/* Bas : slider + bouton confirmer */}
+          <div className="px-6 pt-4 pb-8 bg-black/80 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <i className="ti ti-zoom-out text-white/50 text-lg" />
+              <input
+                type="range"
+                min={1} max={3} step={0.01}
+                value={zoom}
+                onChange={e => setZoom(Number(e.target.value))}
+                className="flex-1 accent-[var(--emerald-500)]"
+              />
+              <i className="ti ti-zoom-in text-white/50 text-lg" />
+            </div>
+            <button
+              onClick={confirmCrop}
+              disabled={uploading}
+              className="w-full py-4 rounded-2xl bg-[var(--emerald-500)] text-white font-bold text-[16px]
+                         flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[.98] transition-all">
+              {uploading
+                ? <><i className="ti ti-loader-2 animate-spin" /> Envoi en cours…</>
+                : <><i className="ti ti-check" /> Utiliser cette photo</>}
+            </button>
           </div>
         </div>
       )}
