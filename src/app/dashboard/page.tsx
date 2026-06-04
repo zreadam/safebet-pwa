@@ -205,12 +205,48 @@ interface LiveMatch {
 function LiveScoreSection() {
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([])
   const [loadingLive, setLoadingLive] = useState(true)
+  const prevScores = useRef<Record<number, { h: number; a: number }>>({})
+
+  async function fetchLive() {
+    try {
+      const data = await fetch("/api/livescore").then(r => r.json())
+      const matches: LiveMatch[] = data.matches ?? []
+
+      // Détecter les nouveaux buts et notifier
+      for (const m of matches) {
+        const prev = prevScores.current[m.id]
+        if (prev) {
+          const hGoals = (m.home_score ?? 0) - prev.h
+          const aGoals = (m.away_score ?? 0) - prev.a
+          if (hGoals > 0) {
+            toast(`⚽ BUT ! ${m.home}`, {
+              description: `${m.home} ${m.home_score}–${m.away_score} ${m.away} (${m.minute})`,
+              duration: 6000,
+            })
+          }
+          if (aGoals > 0) {
+            toast(`⚽ BUT ! ${m.away}`, {
+              description: `${m.home} ${m.home_score}–${m.away_score} ${m.away} (${m.minute})`,
+              duration: 6000,
+            })
+          }
+        }
+        prevScores.current[m.id] = { h: m.home_score ?? 0, a: m.away_score ?? 0 }
+      }
+
+      setLiveMatches(matches)
+      setLoadingLive(false)
+    } catch {
+      setLoadingLive(false)
+    }
+  }
 
   useEffect(() => {
-    fetch("/api/livescore")
-      .then(r => r.json())
-      .then(data => { setLiveMatches(data.matches ?? []); setLoadingLive(false) })
-      .catch(() => setLoadingLive(false))
+    fetchLive()
+    // Polling toutes les 3 minutes quand l'app est ouverte
+    const interval = setInterval(fetchLive, 3 * 60 * 1000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (loadingLive || liveMatches.length === 0) return null
