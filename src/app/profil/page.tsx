@@ -2,13 +2,25 @@
 
 export const dynamic = "force-dynamic"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import AppShell from "@/components/layout/AppShell"
 import { BluffBadge } from "@/components/ui/bluff-badge"
 import { useProfile } from "@/hooks/useProfile"
 import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+
+const PIXEL_AVATARS = [
+  { id: "r9",           label: "Ronaldo R9",   src: "/avatars/r9.png" },
+  { id: "ronaldinho",   label: "Ronaldinho",   src: "/avatars/ronaldinho.png" },
+  { id: "zidane",       label: "Zidane",       src: "/avatars/zidane.png" },
+  { id: "beckham",      label: "Beckham",      src: "/avatars/beckam.png" },
+  { id: "luis-enrique", label: "Luis Enrique", src: "/avatars/luis-enrique.png" },
+  { id: "guardiola",    label: "Guardiola",    src: "/avatars/guardiola.png" },
+  { id: "mbappe",       label: "Mbappé",       src: "/avatars/mbappe.png" },
+  { id: "yamal",        label: "Yamal",        src: "/avatars/yamal.png" },
+]
 
 /* ──────────────── stat card ─────────────────────────────────── */
 function StatCard({ label, value }: { label: string; value: React.ReactNode }) {
@@ -87,17 +99,63 @@ function SettingRow({ icon, label, sub, toggle, rightText, href, danger, onClick
 
 /* ────────────────────────── PAGE ───────────────────────────── */
 export default function ProfilPage() {
-  const { profile, loading } = useProfile()
+  const { profile, loading, refetch } = useProfile()
   const { signOut } = useAuth()
 
-  const [darkMode, setDarkMode] = useState(false)
-  const [notifs, setNotifs]     = useState(true)
+  const [darkMode, setDarkMode]       = useState(false)
+  const [notifs, setNotifs]           = useState(true)
+  const [showSheet, setShowSheet]     = useState(false)
+  const [avatarUrl, setAvatarUrl]     = useState<string | null>(null)
+  const [uploading, setUploading]     = useState(false)
+
+  useEffect(() => {
+    if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
+  }, [profile])
 
   /* sync dark mode with actual html class */
   useEffect(() => {
     const html = document.documentElement
     setDarkMode(html.classList.contains("dark"))
   }, [])
+
+  /* choisir un avatar pixel art */
+  async function selectAvatar(src: string) {
+    setAvatarUrl(src)
+    setShowSheet(false)
+    try {
+      await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar_url: src }),
+      })
+      refetch()
+      toast.success("Avatar mis à jour !")
+    } catch {
+      toast.error("Erreur lors de la mise à jour")
+    }
+  }
+
+  /* uploader sa propre photo */
+  const handlePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setShowSheet(false)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      const res  = await fetch("/api/profile/avatar", { method: "POST", body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setAvatarUrl(data.url)
+      toast.success("Photo mise à jour !")
+      refetch()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur upload")
+    } finally {
+      setUploading(false)
+    }
+  }, [refetch])
 
   function toggleDark(on: boolean) {
     setDarkMode(on)
@@ -127,13 +185,28 @@ export default function ProfilPage() {
           {/* ── Avatar + identity ── */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
-              <div className="w-[88px] h-[88px] rounded-full bg-[var(--emerald-500)] flex items-center justify-center
-                              text-white text-[36px] font-bold [font-family:var(--font-display)] shadow-lg">
-                {loading ? "?" : initial}
-              </div>
-              <button className="absolute bottom-0 right-0 w-8 h-8 bg-[var(--bg-1)] border-2 border-[var(--border-light)]
-                                 rounded-full flex items-center justify-center shadow">
-                <i className="ti ti-pencil text-[14px] text-[var(--fg-2)]" />
+              {/* Avatar */}
+              <button onClick={() => setShowSheet(true)} className="relative w-[88px] h-[88px]">
+                <div className="w-[88px] h-[88px] rounded-full overflow-hidden shadow-lg border-2 border-[var(--emerald-500)]">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="avatar"
+                         className="w-full h-full object-cover"
+                         style={{ imageRendering: "pixelated" }} />
+                  ) : (
+                    <div className="w-full h-full bg-[var(--emerald-500)] flex items-center justify-center
+                                    text-white text-[36px] font-bold [font-family:var(--font-display)]">
+                      {loading ? "?" : initial}
+                    </div>
+                  )}
+                </div>
+                {/* Rond crayon */}
+                <div className="absolute bottom-0 right-0 w-8 h-8 bg-[var(--emerald-500)]
+                                rounded-full flex items-center justify-center shadow-md border-2 border-[var(--bg-1)]">
+                  {uploading
+                    ? <i className="ti ti-loader-2 text-white text-[13px] animate-spin" />
+                    : <i className="ti ti-pencil text-white text-[13px]" />}
+                </div>
               </button>
             </div>
 
@@ -261,6 +334,78 @@ export default function ProfilPage() {
 
         </div>
       </div>
+
+      {/* ── Bottom sheet avatar ── */}
+      {showSheet && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowSheet(false)} />
+          <div className="relative bg-[#1a1f2e] rounded-t-3xl px-4 pt-4 pb-8">
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-base font-bold text-white">Choisis ton avatar</p>
+              <button onClick={() => setShowSheet(false)}
+                      className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <i className="ti ti-x text-white text-sm" />
+              </button>
+            </div>
+
+            {/* Grille 4×2 */}
+            <div className="grid grid-cols-4 gap-3 mb-5">
+              {PIXEL_AVATARS.map(av => (
+                <button key={av.id} type="button"
+                        onClick={() => selectAvatar(av.src)}
+                        className="flex flex-col items-center gap-1">
+                  <div className={cn(
+                    "w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all",
+                    avatarUrl === av.src
+                      ? "border-[var(--emerald-500)] scale-105"
+                      : "border-transparent opacity-70"
+                  )}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={av.src} alt={av.label}
+                         className="w-full h-full object-cover"
+                         style={{ imageRendering: "pixelated" }} />
+                  </div>
+                  <span className="text-[9px] text-white/60 text-center leading-tight">{av.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Séparateur */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-xs text-white/40">ou</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Upload photo perso — iOS-safe */}
+            <div className="relative w-full h-12">
+              <div className="absolute inset-0 rounded-2xl border border-white/20 flex items-center justify-center gap-2 pointer-events-none">
+                <i className={cn("ti text-[var(--emerald-500)] text-lg",
+                   uploading ? "ti-loader-2 animate-spin" : "ti-photo")} />
+                <span className="text-sm font-semibold text-white">
+                  {uploading ? "Envoi…" : "Importer ma propre photo"}
+                </span>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                disabled={uploading}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  opacity: 0,
+                  cursor: "pointer",
+                  fontSize: "0",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   )
 }
