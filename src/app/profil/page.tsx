@@ -405,7 +405,12 @@ export default function ProfilPage() {
                 sub={isPremium ? "Tu es Premium ✨" : "Passe au Premium"}
                 href="/premium"
               />
-              {/* Notifications — sous Abonnement */}
+              {/* Séparateur Notifications */}
+              <div className="px-4 py-2 bg-[var(--bg-2)]">
+                <p className="text-[11px] font-semibold text-[var(--fg-3)] uppercase tracking-wider">
+                  Notifications
+                </p>
+              </div>
               <SettingRow
                 icon="ti-bell"
                 label="Résultats de paris"
