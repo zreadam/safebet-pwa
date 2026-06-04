@@ -132,12 +132,8 @@ export async function GET(req: Request) {
         if (!res.ok) continue
         const data = await res.json()
 
-        // Compte suspendu → stocker un flag et arrêter
+        // Compte suspendu → loguer et arrêter
         if (data.errors?.access || data.errors?.token) {
-          await admin.from("app_config").upsert(
-            { key: "football_api_status", value: "suspended", updated_at: now.toISOString() },
-            { onConflict: "key" }
-          ).catch(() => {})
           stats.errors.push(`football: compte suspendu`)
           break
         }
@@ -182,12 +178,6 @@ export async function GET(req: Request) {
           await admin.from("matches").upsert(friendly, { onConflict: "id" })
           stats.football += friendly.length
           stats.days_fetched.push(dateStr)
-        } else if (i > 0) {
-          // Stocker en base que ce jour n'a pas de données dispo
-          await admin.from("app_config").upsert(
-            { key: `no_matches_${dateStr}`, value: "true", updated_at: now.toISOString() },
-            { onConflict: "key" }
-          ).catch(() => {})
         }
       } catch (e) {
         stats.errors.push(`football-${dateStr}: ${e}`)
@@ -195,13 +185,6 @@ export async function GET(req: Request) {
     }
   }
 
-  // Marquer l'API comme fonctionnelle si pas d'erreur suspension
-  if (!stats.errors.some(e => e.includes("suspendu"))) {
-    await admin.from("app_config").upsert(
-      { key: "football_api_status", value: "ok", updated_at: now.toISOString() },
-      { onConflict: "key" }
-    ).catch(() => {})
-  }
 
   console.log(`[cron 3h] terminé — odds:${stats.odds} football:${stats.football} jours:${stats.days_fetched.join(",")}`)
 
