@@ -213,9 +213,9 @@ export default function ParametresPage() {
             <div className="px-4 pt-4 pb-3 space-y-4">
               {/* Avatar actuel + bouton upload */}
               <div className="flex items-center gap-4">
-                {/* Conteneur relatif pour le rond caméra en bas à droite */}
+                {/* Avatar + input file overlay sur toute la surface (iOS-safe) */}
                 <div className="relative flex-shrink-0 w-16 h-16">
-                  {/* Avatar */}
+                  {/* Avatar visuel */}
                   <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[var(--color-brand-primary)]">
                     {avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -229,28 +229,31 @@ export default function ParametresPage() {
                     )}
                   </div>
 
-                  {/* Rond caméra bas-droite — input file overlay iOS-safe */}
+                  {/* Rond caméra décoratif (pointer-events-none) */}
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--color-brand-primary)]
-                                  flex items-center justify-center shadow-md overflow-hidden">
+                                  flex items-center justify-center shadow-md pointer-events-none z-10">
                     {uploadingPhoto
-                      ? <i className="ti ti-loader-2 text-white text-[12px] animate-spin pointer-events-none" />
-                      : <i className="ti ti-camera text-white text-[12px] pointer-events-none" />}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      disabled={uploadingPhoto}
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        opacity: 0,
-                        cursor: "pointer",
-                        fontSize: "0",
-                      }}
-                    />
+                      ? <i className="ti ti-loader-2 text-white text-[12px] animate-spin" />
+                      : <i className="ti ti-camera text-white text-[12px]" />}
                   </div>
+
+                  {/* Input file transparent sur tout l'avatar — iOS Safari compatible */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    disabled={uploadingPhoto}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                      opacity: 0,
+                      cursor: "pointer",
+                      fontSize: "0",
+                      zIndex: 20,
+                    }}
+                  />
                 </div>
 
                 <div>
