@@ -92,6 +92,7 @@ export default function ParametresPage() {
 
   const [pushSupported, setPushSupported] = useState(false)
   const [pushGranted, setPushGranted] = useState(false)
+  const [showAvatarSheet, setShowAvatarSheet] = useState(false)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -213,9 +214,13 @@ export default function ParametresPage() {
             <div className="px-4 pt-4 pb-3 space-y-4">
               {/* Avatar actuel + bouton upload */}
               <div className="flex items-center gap-4">
-                {/* Avatar + input file overlay sur toute la surface (iOS-safe) */}
-                <div className="relative flex-shrink-0 w-16 h-16">
-                  {/* Avatar visuel */}
+                {/* Avatar — tap pour ouvrir le sélecteur */}
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarSheet(true)}
+                  className="relative flex-shrink-0 w-16 h-16"
+                >
                   <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[var(--color-brand-primary)]">
                     {avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -228,75 +233,17 @@ export default function ParametresPage() {
                       </div>
                     )}
                   </div>
-
-                  {/* Rond caméra décoratif (pointer-events-none) */}
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--color-brand-primary)]
-                                  flex items-center justify-center shadow-md pointer-events-none z-10">
-                    {uploadingPhoto
-                      ? <i className="ti ti-loader-2 text-white text-[12px] animate-spin" />
-                      : <i className="ti ti-camera text-white text-[12px]" />}
+                                  flex items-center justify-center shadow-md">
+                    <i className="ti ti-pencil text-white text-[11px]" />
                   </div>
-
-                  {/* Input file transparent sur tout l'avatar — iOS Safari compatible */}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    disabled={uploadingPhoto}
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      width: "100%",
-                      height: "100%",
-                      opacity: 0,
-                      cursor: "pointer",
-                      fontSize: "0",
-                      zIndex: 20,
-                    }}
-                  />
-                </div>
-
+                </button>
                 <div>
                   <p className="text-sm font-semibold text-[var(--color-text-primary)]">Photo de profil</p>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Galerie ci-dessous ou ta propre photo</p>
-                </div>
-              </div>
-
-              {/* Carrousel avatars pixel art */}
-              <div>
-                <p className="text-xs text-[var(--color-text-secondary)] mb-3 font-semibold uppercase tracking-wider">
-                  Avatars pixel art
-                </p>
-                <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory"
-                     style={{ scrollbarWidth: "none" }}>
-                  {PIXEL_AVATARS.map(av => (
-                    <button
-                      key={av.id}
-                      type="button"
-                      onClick={() => setAvatarUrl(av.src)}
-                      className="flex-shrink-0 snap-center flex flex-col items-center gap-1.5"
-                    >
-                      <div className={cn(
-                        "w-20 h-20 rounded-2xl overflow-hidden transition-all duration-200",
-                        avatarUrl === av.src
-                          ? "ring-3 ring-[var(--color-brand-primary)] scale-105 shadow-lg"
-                          : "opacity-60 hover:opacity-90"
-                      )}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={av.src} alt={av.label}
-                             className="w-full h-full object-cover"
-                             style={{ imageRendering: "pixelated" }} />
-                      </div>
-                      <span className={cn(
-                        "text-[10px] font-semibold whitespace-nowrap",
-                        avatarUrl === av.src
-                          ? "text-[var(--color-brand-primary)]"
-                          : "text-[var(--color-text-secondary)]"
-                      )}>
-                        {av.label}
-                      </span>
-                    </button>
-                  ))}
+                  <button type="button" onClick={() => setShowAvatarSheet(true)}
+                          className="text-xs text-[var(--color-brand-primary)] mt-0.5 font-medium">
+                    Changer d'avatar →
+                  </button>
                 </div>
               </div>
 
@@ -450,6 +397,97 @@ export default function ParametresPage() {
             >
               Annuler
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bottom sheet sélecteur d'avatar ── */}
+      {showAvatarSheet && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowAvatarSheet(false)} />
+
+          {/* Sheet */}
+          <div className="relative bg-[var(--color-bg-card)] rounded-t-3xl p-5 pb-8">
+            {/* Handle */}
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
+
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-[var(--color-text-primary)]">Choisis ton avatar</h3>
+              <button onClick={() => setShowAvatarSheet(false)}
+                      className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <i className="ti ti-x text-sm text-[var(--color-text-primary)]" />
+              </button>
+            </div>
+
+            {/* Grille avatars */}
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {PIXEL_AVATARS.map(av => (
+                <button
+                  key={av.id}
+                  type="button"
+                  onClick={() => {
+                    setAvatarUrl(av.src)
+                    setShowAvatarSheet(false)
+                  }}
+                  className="flex flex-col items-center gap-1"
+                >
+                  <div className={cn(
+                    "w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all",
+                    avatarUrl === av.src
+                      ? "border-[var(--color-brand-primary)] scale-105"
+                      : "border-transparent"
+                  )}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={av.src} alt={av.label} className="w-full h-full object-cover"
+                         style={{ imageRendering: "pixelated" }} />
+                  </div>
+                  <span className={cn(
+                    "text-[9px] font-semibold text-center leading-tight",
+                    avatarUrl === av.src ? "text-[var(--color-brand-primary)]" : "text-[var(--color-text-secondary)]"
+                  )}>
+                    {av.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Séparateur */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-xs text-[var(--color-text-secondary)]">ou</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Upload photo perso */}
+            <div className="relative w-full">
+              <div className="w-full py-3 rounded-2xl border border-white/20 flex items-center justify-center gap-2">
+                {uploadingPhoto
+                  ? <i className="ti ti-loader-2 text-[var(--color-brand-primary)] animate-spin" />
+                  : <i className="ti ti-camera text-[var(--color-brand-primary)]" />}
+                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                  {uploadingPhoto ? "Envoi en cours…" : "Importer ma propre photo"}
+                </span>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  await handlePhotoChange(e)
+                  setShowAvatarSheet(false)
+                }}
+                disabled={uploadingPhoto}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  opacity: 0,
+                  cursor: "pointer",
+                  fontSize: "0",
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
