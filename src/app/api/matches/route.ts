@@ -11,7 +11,7 @@ const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
                     3 req × 12 refreshes/jour = 36 req/jour ✓
 ──────────────────────────────────────────────────────────────── */
 const ODDS_REFRESH_MS     = 20 * 60 * 60 * 1000   // 20 heures
-const FOOTBALL_REFRESH_MS =  1 * 60 * 60 * 1000   //  1 heure
+const FOOTBALL_REFRESH_MS =  3 * 60 * 60 * 1000   //  3 heures (quota préservé)
 
 // Clés confirmées actives dans The Odds API (juin 2026)
 const SPORT_KEYS: Record<string, string> = {
