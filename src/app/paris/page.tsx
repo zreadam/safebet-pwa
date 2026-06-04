@@ -10,6 +10,80 @@ import { useProfile } from "@/hooks/useProfile"
 import { cn } from "@/lib/utils"
 import type { Bet, BetStatus } from "@/types"
 
+/* ──────────────────────── balance chart (premium) ──────────── */
+function BalanceChart({ bets, startBalance }: { bets: Bet[]; startBalance: number }) {
+  // Construire la courbe : solde après chaque pari résolu (won/lost)
+  const resolved = [...bets]
+    .filter(b => b.status === "won" || b.status === "lost")
+    .sort((a, b) => new Date(a.placed_at).getTime() - new Date(b.placed_at).getTime())
+
+  const points: { date: string; balance: number }[] = [{ date: "", balance: startBalance }]
+  let running = startBalance
+  for (const b of resolved) {
+    if (b.status === "won")  running += b.potential_gain - b.stake
+    if (b.status === "lost") running -= b.stake
+    points.push({ date: new Date(b.placed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }), balance: Math.max(0, running) })
+  }
+
+  if (points.length < 2) return (
+    <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
+                    p-6 h-[160px] flex flex-col items-center justify-center gap-2">
+      <i className="ti ti-chart-line text-[32px] text-[var(--fg-3)]" />
+      <p className="text-[13px] text-[var(--fg-3)]">Résous des paris pour voir ton évolution</p>
+    </div>
+  )
+
+  const W = 340, H = 120, PAD = 12
+  const values = points.map(p => p.balance)
+  const minV = Math.min(...values)
+  const maxV = Math.max(...values)
+  const range = maxV - minV || 1
+
+  const x = (i: number) => PAD + (i / (points.length - 1)) * (W - PAD * 2)
+  const y = (v: number) => PAD + (1 - (v - minV) / range) * (H - PAD * 2)
+
+  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(p.balance).toFixed(1)}`).join(" ")
+  const areaD = `${pathD} L ${x(points.length - 1).toFixed(1)} ${H} L ${x(0).toFixed(1)} ${H} Z`
+
+  const isUp = points[points.length - 1].balance >= startBalance
+  const color = isUp ? "var(--emerald-500)" : "var(--error)"
+
+  return (
+    <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)]
+                    [box-shadow:var(--shadow-card)] p-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[13px] text-[var(--fg-3)]">{points.length - 1} paris résolus</span>
+        <span className={cn("text-[15px] font-bold [font-family:var(--font-display)]",
+          isUp ? "text-[var(--emerald-500)]" : "text-[var(--error)]")}>
+          {isUp ? "+" : ""}{(points[points.length - 1].balance - startBalance).toFixed(2)} B
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 120 }}>
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        {/* Ligne de départ */}
+        <line x1={PAD} y1={y(startBalance)} x2={W - PAD} y2={y(startBalance)}
+              stroke="var(--border-light)" strokeWidth="1" strokeDasharray="4 3" />
+        {/* Zone remplie */}
+        <path d={areaD} fill="url(#chartGrad)" />
+        {/* Ligne principale */}
+        <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Point final */}
+        <circle cx={x(points.length - 1)} cy={y(points[points.length - 1].balance)} r="4"
+                fill={color} stroke="white" strokeWidth="2" />
+      </svg>
+      <div className="flex justify-between mt-1">
+        <span className="text-[10px] text-[var(--fg-3)]">Début</span>
+        <span className="text-[10px] text-[var(--fg-3)]">{points[points.length - 1].date}</span>
+      </div>
+    </div>
+  )
+}
+
 /* ──────────────────────── filter types ─────────────────────── */
 type Filter = "all" | "pending" | "won" | "lost"
 
@@ -260,20 +334,24 @@ export default function ParisPage() {
             }
           </div>
 
-          {/* ── premium chart placeholder ── */}
-          {bets.length > 0 && (
+          {/* ── Évolution du solde ── */}
+          {realBets.length > 0 && (
             <section>
               <h2 className="text-[17px] font-semibold [font-family:var(--font-display)]
                              text-[var(--fg-1)] tracking-tight mb-3">
                 Évolution du solde
               </h2>
-              <PremiumLock label="Graphique Premium">
-                <div className="bg-[var(--bg-2)] border border-[var(--border-light)] rounded-[var(--radius-card)]
-                                p-6 h-[160px] flex flex-col items-center justify-center gap-2">
-                  <i className="ti ti-chart-line text-[40px] text-[var(--fg-3)]" />
-                  <p className="text-[13px] text-[var(--fg-3)]">Graphique d&apos;évolution</p>
-                </div>
-              </PremiumLock>
+              {profile?.tier === "premium" ? (
+                <BalanceChart bets={realBets} startBalance={50} />
+              ) : (
+                <PremiumLock label="Graphique Premium">
+                  <div className="bg-[var(--bg-2)] border border-[var(--border-light)] rounded-[var(--radius-card)]
+                                  p-6 h-[160px] flex flex-col items-center justify-center gap-2">
+                    <i className="ti ti-chart-line text-[40px] text-[var(--fg-3)]" />
+                    <p className="text-[13px] text-[var(--fg-3)]">Graphique d&apos;évolution</p>
+                  </div>
+                </PremiumLock>
+              )}
             </section>
           )}
 

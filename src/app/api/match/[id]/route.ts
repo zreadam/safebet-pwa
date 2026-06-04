@@ -383,6 +383,16 @@ export async function GET(
     }
   }
 
+  // Mettre à jour les vraies cotes 1X2 dans la table matches (pour le dashboard)
+  if (fixtureId && detailedOdds && detailedOdds.home && detailedOdds.draw && detailedOdds.away) {
+    const matchId = `apf-${fixtureId}`
+    supabase.from("matches").update({
+      odds_1: detailedOdds.home,
+      odds_n: detailedOdds.draw,
+      odds_2: detailedOdds.away,
+    }).eq("id", matchId).then(() => {})
+  }
+
   // Nettoyer les champs internes avant d'envoyer au client
   if (matchData) {
     const { _homeTeamId: _h, _awayTeamId: _a, ...cleanMatch } = matchData as Record<string, unknown>
