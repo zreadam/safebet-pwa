@@ -88,7 +88,9 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
         </div>
         <div className="text-center">
           <div className="font-bold text-[26px] leading-none [font-family:var(--font-display)] text-[var(--fg-1)] whitespace-nowrap">
-            {(live || done) ? `${m.home_score} – ${m.away_score}` : "–"}
+            {(live || done) && m.home_score !== null && m.away_score !== null
+            ? `${m.home_score} – ${m.away_score}`
+            : "–"}
           </div>
           {live && <div className="text-xs text-[var(--fg-3)] mt-1">{m.minute}</div>}
           {!live && !done && (
