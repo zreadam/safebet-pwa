@@ -30,6 +30,10 @@ async function ensureTables() {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
+
+    // Force schema reload
+    await supabase.from("push_subscriptions").select("id").limit(0)
+
     const { data: { user } } = await supabase.auth.getUser()
     console.log("[push/subscribe] user:", user?.id || "none")
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
