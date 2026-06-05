@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
+const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY
 
 // Cache TTLs
 const TTL_LIVE_MS   = 5 * 60 * 1000       // 5 min for events/lineups
@@ -68,6 +69,143 @@ async function apfFetch(path: string) {
   if (!res.ok) return null
   const data = await res.json()
   return data.response ?? null
+}
+
+// Football-Data.org API
+async function footballDataFetch(path: string) {
+  if (!FOOTBALL_DATA_KEY) return null
+  try {
+    const res = await fetch(`https://api.football-data.org/v4/${path}`, {
+      headers: { "X-Auth-Token": FOOTBALL_DATA_KEY },
+      next: { revalidate: 60 },
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data
+  } catch (error) {
+    console.error("Football-Data.org fetch error:", error)
+    return null
+  }
+}
+
+// Normalize team names for matching
+function normalizeTeamName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "") // Remove special chars
+    .replace(/\s+/g, " ")    // Normalize spaces
+    .trim()
+}
+
+// Search match on Football-Data.org by team names and date
+async function findFootballDataMatch(
+  homeTeam: string,
+  awayTeam: string,
+  kickoff: string
+) {
+  try {
+    // Parse date to get the date only (YYYY-MM-DD)
+    const matchDate = new Date(kickoff).toISOString().split("T")[0]
+
+    // Fetch matches for the day
+    const data = await footballDataFetch(`matches?dateFrom=${matchDate}&dateTo=${matchDate}`)
+    if (!data?.matches) return null
+
+    const homeNorm = normalizeTeamName(homeTeam)
+    const awayNorm = normalizeTeamName(awayTeam)
+
+    // Find exact match by team names
+    const match = data.matches.find((m: any) => {
+      const mHomeNorm = normalizeTeamName(m.homeTeam.name)
+      const mAwayNorm = normalizeTeamName(m.awayTeam.name)
+      return (mHomeNorm === homeNorm && mAwayNorm === awayNorm)
+    })
+
+    return match ?? null
+  } catch (error) {
+    console.error("Find Football-Data match error:", error)
+    return null
+  }
+}
+
+// Parse events from Football-Data match
+interface FdEvent {
+  minute?: { minute: number }
+  team: { name: string }
+  player?: { name: string }
+  assist?: { name: string }
+  type: string
+  detail?: string
+}
+
+function parseFootballDataEvents(
+  fdMatch: any,
+  homeTeamName: string,
+  awayTeamName: string
+) {
+  if (!fdMatch) return null
+
+  const events = []
+
+  // Goals
+  if (fdMatch.goals) {
+    for (const goal of fdMatch.goals) {
+      if (goal) {
+        events.push({
+          minute: goal.minute,
+          team: goal.team.name,
+          player: goal.scorer?.name || "?",
+          assist: goal.assist?.name || null,
+          type: "goal",
+          detail: "Goal",
+        })
+      }
+    }
+  }
+
+  // Bookings (Yellow/Red Cards)
+  if (fdMatch.bookings) {
+    for (const booking of fdMatch.bookings) {
+      if (booking) {
+        events.push({
+          minute: booking.minute,
+          team: booking.team.name,
+          player: booking.player?.name || "?",
+          type: booking.cardType === "YELLOW_CARD" ? "yellow_card" : "red_card",
+          detail: booking.cardType === "YELLOW_CARD" ? "Yellow Card" : "Red Card",
+        })
+      }
+    }
+  }
+
+  // Substitutions
+  if (fdMatch.substitutions) {
+    for (const sub of fdMatch.substitutions) {
+      if (sub) {
+        events.push({
+          minute: sub.minute,
+          team: sub.team.name,
+          player: sub.playerOut?.name || "?",
+          assist: sub.playerIn?.name || null,
+          type: "substitution",
+          detail: `${sub.playerOut?.name || "?"} → ${sub.playerIn?.name || "?"}`,
+        })
+      }
+    }
+  }
+
+  // Sort by minute
+  return events.sort((a, b) => (a.minute || 0) - (b.minute || 0))
+}
+
+// Get live score from Football-Data.org
+function getFootballDataScore(fdMatch: any) {
+  if (!fdMatch) return null
+  return {
+    home: fdMatch.score?.fullTime?.home ?? null,
+    away: fdMatch.score?.fullTime?.away ?? null,
+    minute: fdMatch.status === "IN_PLAY" ? fdMatch.utcDate : null,
+  }
 }
 
 export async function GET(
@@ -159,7 +297,10 @@ export async function GET(
       return data
     }
 
-    const [statsRes, eventsRes, lineupsRes, oddsRes, formHomeRes, formAwayRes, h2hRes, predictionsRes, injuriesRes] = await Promise.all([
+    // Try to get Football-Data.org match for live events
+    const fdMatchPromise = findFootballDataMatch(matchData.home_team, matchData.away_team, matchData.kickoff)
+
+    const [statsRes, eventsRes, lineupsRes, oddsRes, formHomeRes, formAwayRes, h2hRes, predictionsRes, injuriesRes, fdMatch] = await Promise.all([
       fetchCached(`fixtures/statistics?fixture=${fixtureId}`, `match_${fixtureId}_stats`, TTL_LIVE_MS),
       fetchCached(`fixtures/events?fixture=${fixtureId}`, `match_${fixtureId}_events`, TTL_LIVE_MS),
       fetchCached(`fixtures/lineups?fixture=${fixtureId}`, `match_${fixtureId}_lineups`, TTL_LIVE_MS),
@@ -170,6 +311,7 @@ export async function GET(
       (homeTeamId && awayTeamId) ? fetchCached(`fixtures/headtohead?h2h=${homeTeamId}-${awayTeamId}&last=5`, `match_${fixtureId}_h2h`, TTL_STATIC_MS) : Promise.resolve(null),
       fetchCached(`predictions?fixture=${fixtureId}`, `match_${fixtureId}_predictions`, TTL_STATIC_MS),
       fetchCached(`injuries?fixture=${fixtureId}`, `match_${fixtureId}_injuries`, TTL_STATIC_MS),
+      fdMatchPromise,
     ])
 
     // Parser les cotes — chercher le bookmaker avec le plus de marchés
@@ -249,7 +391,22 @@ export async function GET(
       }
     }
 
-    if (eventsRes) {
+    // Use Football-Data.org events if available (live score + events), otherwise API-Football
+    if (fdMatch) {
+      events = parseFootballDataEvents(fdMatch, matchData.home_team, matchData.away_team)
+
+      // Update score from Football-Data if match is live/done
+      if (fdMatch.score) {
+        const fdScore = getFootballDataScore(fdMatch)
+        if (fdScore && fdScore.home !== null) {
+          matchData.home_score = fdScore.home
+        }
+        if (fdScore && fdScore.away !== null) {
+          matchData.away_score = fdScore.away
+        }
+      }
+    } else if (eventsRes) {
+      // Fallback to API-Football events
       events = eventsRes.map((e: {
         time: { elapsed: number }
         team: { name: string }
