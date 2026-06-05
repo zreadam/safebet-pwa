@@ -65,10 +65,27 @@ async function fetchFootballDataMatches(now: Date) {
 
   const matches: object[] = []
   const FD_COMP_MAP: Record<string, string> = {
-    PL: "PL", BL1: "BL", SA: "SA", FL1: "L1", PPDA: "LPT", PD: "LIGA",
-    ED: "ERE", "TR1": "STL", CL: "UCL", EL: "EL", ECL: "ECL",
-    WC: "CDM", EC: "EURO", "UNL": "NL", CAN: "CAN",
-    Copa: "CA", LIB: "LIB",
+    // Ligues nationales
+    PL: "PL",      // Premier League
+    BL1: "BL",     // Bundesliga
+    SA: "SA",      // Serie A
+    FL1: "L1",     // Ligue 1
+    PPL: "LPT",    // Liga Portugal
+    PPDA: "LPT",   // Liga Portugal (alternative code)
+    PD: "LIGA",    // La Liga
+    DED: "ERE",    // Eredivisie
+    TR1: "STL",    // Süper Lig
+    // Coupes Européennes
+    CL: "UCL",     // Champions League
+    EL: "EL",      // Europa League
+    ECL: "ECL",    // Conference League
+    // Compétitions Mondiales
+    WC: "CDM",     // World Cup
+    EC: "EURO",    // Euro
+    UNL: "NL",     // Nations League
+    CAN: "CAN",    // African Cup of Nations
+    Copa: "CA",    // Copa América
+    CLI: "LIB",    // Copa Libertadores
   }
 
   try {
