@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY
+const ODDSPAPI_KEY = process.env.ODDSPAPI_KEY
 
 // Cache TTLs
 const TTL_LIVE_MS   = 5 * 60 * 1000       // 5 min for events/lineups
@@ -208,6 +209,176 @@ function getFootballDataScore(fdMatch: any) {
   }
 }
 
+// ── OddsPapi Fallback ──────────────────────────────────────────────────────
+async function oddsPapiFetch(endpoint: string) {
+  if (!ODDSPAPI_KEY) return null
+  try {
+    const res = await fetch(`https://api.oddspapi.io/v1${endpoint}`, {
+      headers: { "X-API-Key": ODDSPAPI_KEY },
+      next: { revalidate: 60 },
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data
+  } catch (error) {
+    console.error("OddsPapi fetch error:", error)
+    return null
+  }
+}
+
+// Fetch match odds from OddsPapi as fallback
+async function getOddsPapiOdds(homeTeam: string, awayTeam: string, kickoff: string) {
+  try {
+    // Search for match by teams and date
+    const matchDate = new Date(kickoff).toISOString().split("T")[0]
+    const data = await oddsPapiFetch(
+      `/matches?dateFrom=${matchDate}&dateTo=${matchDate}&limit=100`
+    )
+
+    if (!data?.matches || !Array.isArray(data.matches)) return null
+
+    // Find matching game
+    const homeNorm = homeTeam.toLowerCase().replace(/[^\w\s]/g, "")
+    const awayNorm = awayTeam.toLowerCase().replace(/[^\w\s]/g, "")
+
+    const match = data.matches.find((m: any) => {
+      const mHomeNorm = m.homeTeam?.name?.toLowerCase().replace(/[^\w\s]/g, "") ?? ""
+      const mAwayNorm = m.awayTeam?.name?.toLowerCase().replace(/[^\w\s]/g, "") ?? ""
+      return mHomeNorm === homeNorm && mAwayNorm === awayNorm
+    })
+
+    if (!match?.id) return null
+
+    // Get detailed odds for this match
+    const oddsData = await oddsPapiFetch(`/matches/${match.id}/odds`)
+    if (!oddsData?.odds) return null
+
+    // Parse odds based on bookmaker availability
+    const bookmakers = oddsData.odds.bookmakers || []
+    const bkm = bookmakers[0] // Use first available bookmaker
+
+    if (!bkm?.markets) return null
+
+    // Extract main odds (1X2)
+    const markets = bkm.markets
+    const winMarket = markets.find((m: any) => m.type === "WIN" || m.type === "1X2")
+
+    if (!winMarket?.outcomes) return null
+
+    const odds = {
+      home: null as number | null,
+      draw: null as number | null,
+      away: null as number | null,
+      // Additional markets
+      dnb_home: null as number | null,
+      dnb_away: null as number | null,
+      dc_1n: null as number | null,
+      dc_12: null as number | null,
+      dc_n2: null as number | null,
+      ou15_over: null as number | null,
+      ou15_under: null as number | null,
+      ou25_over: null as number | null,
+      ou25_under: null as number | null,
+      ou35_over: null as number | null,
+      ou35_under: null as number | null,
+      ou45_over: null as number | null,
+      ou45_under: null as number | null,
+      btts_yes: null as number | null,
+      btts_no: null as number | null,
+      ht_home: null as number | null,
+      ht_draw: null as number | null,
+      ht_away: null as number | null,
+      ouHT_over05: null as number | null,
+      ouHT_under05: null as number | null,
+      ouHT_over15: null as number | null,
+      ouHT_under15: null as number | null,
+      eh_home_m1: null as number | null,
+      eh_draw_0: null as number | null,
+      eh_away_p1: null as number | null,
+      cs_home_yes: null as number | null,
+      cs_home_no: null as number | null,
+      tsf_home: null as number | null,
+      tsf_none: null as number | null,
+      tsf_away: null as number | null,
+      es_1_0: null as number | null,
+      es_2_0: null as number | null,
+      es_2_1: null as number | null,
+      es_0_0: null as number | null,
+      es_1_1: null as number | null,
+      es_0_1: null as number | null,
+      es_0_2: null as number | null,
+      es_1_2: null as number | null,
+      es_3_0: null as number | null,
+      es_3_1: null as number | null,
+      es_3_2: null as number | null,
+    }
+
+    // Extract main odds
+    for (const outcome of winMarket.outcomes) {
+      if (outcome.name === "1" || outcome.name === "Home") {
+        odds.home = parseFloat(outcome.odds) || null
+      } else if (outcome.name === "X" || outcome.name === "Draw") {
+        odds.draw = parseFloat(outcome.odds) || null
+      } else if (outcome.name === "2" || outcome.name === "Away") {
+        odds.away = parseFloat(outcome.odds) || null
+      }
+    }
+
+    // Extract other markets
+    const marketMap: Record<string, string> = {
+      "DOUBLE_CHANCE": "DC",
+      "OVER_UNDER": "OU",
+      "BTTS": "BTTS",
+      "CORRECT_SCORE": "CS",
+      "FIRST_GOAL": "FG",
+    }
+
+    for (const market of markets) {
+      if (!market.outcomes) continue
+
+      // Over/Under goals
+      if (market.type === "OVER_UNDER") {
+        for (const outcome of market.outcomes) {
+          if (outcome.name?.includes("Over 1.5")) odds.ou15_over = parseFloat(outcome.odds)
+          if (outcome.name?.includes("Under 1.5")) odds.ou15_under = parseFloat(outcome.odds)
+          if (outcome.name?.includes("Over 2.5")) odds.ou25_over = parseFloat(outcome.odds)
+          if (outcome.name?.includes("Under 2.5")) odds.ou25_under = parseFloat(outcome.odds)
+          if (outcome.name?.includes("Over 3.5")) odds.ou35_over = parseFloat(outcome.odds)
+          if (outcome.name?.includes("Under 3.5")) odds.ou35_under = parseFloat(outcome.odds)
+        }
+      }
+
+      // BTTS
+      if (market.type === "BTTS") {
+        for (const outcome of market.outcomes) {
+          if (outcome.name?.includes("Yes")) odds.btts_yes = parseFloat(outcome.odds)
+          if (outcome.name?.includes("No")) odds.btts_no = parseFloat(outcome.odds)
+        }
+      }
+
+      // Correct Score
+      if (market.type === "CORRECT_SCORE") {
+        for (const outcome of market.outcomes) {
+          const score = outcome.name || ""
+          if (score === "1-0") odds.es_1_0 = parseFloat(outcome.odds)
+          if (score === "2-0") odds.es_2_0 = parseFloat(outcome.odds)
+          if (score === "2-1") odds.es_2_1 = parseFloat(outcome.odds)
+          if (score === "0-0") odds.es_0_0 = parseFloat(outcome.odds)
+          if (score === "1-1") odds.es_1_1 = parseFloat(outcome.odds)
+          if (score === "0-1") odds.es_0_1 = parseFloat(outcome.odds)
+          if (score === "0-2") odds.es_0_2 = parseFloat(outcome.odds)
+          if (score === "1-2") odds.es_1_2 = parseFloat(outcome.odds)
+        }
+      }
+    }
+
+    return odds
+  } catch (error) {
+    console.error("[OddsPapi] Error getting odds:", error)
+    return null
+  }
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -361,6 +532,16 @@ export async function GET(
           es_0_1: getVal(exact, "0:1"), es_0_2: getVal(exact, "0:2"), es_1_2: getVal(exact, "1:2"),
           es_3_0: getVal(exact, "3:0"), es_3_1: getVal(exact, "3:1"), es_3_2: getVal(exact, "3:2"),
         }
+      }
+    }
+
+    // ── Fallback OddsPapi si API-Football n'a pas les cotes ──
+    if (!detailedOdds || (!detailedOdds.home && !detailedOdds.draw && !detailedOdds.away)) {
+      console.log(`[OddsPapi fallback] Fetching odds for ${matchData.home_team} vs ${matchData.away_team}`)
+      const oddsPapiOdds = await getOddsPapiOdds(matchData.home_team, matchData.away_team, matchData.kickoff)
+      if (oddsPapiOdds) {
+        detailedOdds = oddsPapiOdds
+        console.log(`[OddsPapi] Successfully retrieved odds`)
       }
     }
 
