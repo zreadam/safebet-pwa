@@ -50,24 +50,27 @@ export async function GET() {
       GRANT SELECT, INSERT, UPDATE, DELETE ON public.push_subscriptions TO authenticated;
     `
 
-    // Try using sql function
+    // Try using rpc function
     console.log("[setup-push-tables] Attempting to create tables...")
 
-    const { data, error } = await admin.rpc("sql", {
-      query: migrationSQL,
-    }).catch(() => ({ data: null, error: { message: "sql RPC not available" } }))
+    let result: any = { data: null, error: { message: "Not attempted" } }
 
-    if (error && error.message.includes("not found")) {
-      // Fallback: try with exec_sql
-      console.log("[setup-push-tables] Trying exec_sql...")
-      const result = await admin.rpc("exec_sql", {
-        sql: migrationSQL,
-      }).catch(e => ({ data: null, error: e }))
-
-      if (result.error) {
-        console.error("[setup-push-tables] exec_sql also failed:", result.error)
+    try {
+      result = await admin.rpc("sql", {
+        query: migrationSQL,
+      })
+    } catch (e) {
+      console.log("[setup-push-tables] sql RPC not available, trying exec_sql...")
+      try {
+        result = await admin.rpc("exec_sql", {
+          sql: migrationSQL,
+        })
+      } catch (e2) {
+        console.error("[setup-push-tables] both RPCs failed:", e2)
       }
     }
+
+    const { data, error } = result
 
     console.log("[setup-push-tables] migration result:", { data, error })
 
