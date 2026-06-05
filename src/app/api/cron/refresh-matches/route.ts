@@ -18,6 +18,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
 
 const ODDS_API_KEY      = process.env.THE_ODDS_API_KEY || process.env.ODDS_API_KEY
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY
+const ODDSPAPI_KEY      = process.env.ODDSPAPI_KEY
 const CRON_SECRET       = process.env.CRON_SECRET
 
 /* ── 28 compétitions autorisées (liste de référence) ────────────────────── */
@@ -201,6 +202,110 @@ async function fetchFootballDataMatches(now: Date) {
   }
 }
 
+/* ── OddsPapi Fallback — Récupère les matchs de base ─────────────────────── */
+async function fetchOddsPapiMatches(now: Date) {
+  if (!ODDSPAPI_KEY) return []
+
+  const matches: object[] = []
+
+  // Map OddsPapi competition codes to our internal codes
+  const ODDSPAPI_COMP_MAP: Record<string, string> = {
+    // Ligues nationales
+    "premier-league": "PL",
+    "la-liga": "LIGA",
+    "serie-a": "SA",
+    "ligue-1": "L1",
+    "bundesliga": "BL",
+    "liga-portugal": "LPT",
+    "eredivisie": "ERE",
+    "super-lig": "STL",
+    // Compétitions Mondiales
+    "world-cup": "CDM",
+    "euro": "EURO",
+    "copa-america": "CA",
+    "copa-libertadores": "LIB",
+    "africa-cup-of-nations": "CAN",
+    "nations-league": "NL",
+    // Coupes Européennes
+    "champions-league": "UCL",
+    "europa-league": "EL",
+    "conference-league": "ECL",
+  }
+
+  try {
+    const dateStr = now.toISOString().split("T")[0]
+    const tomorrow = new Date(now.getTime() + 86400_000).toISOString().split("T")[0]
+
+    const res = await fetch(
+      `https://api.oddspapi.io/v1/matches?dateFrom=${dateStr}&dateTo=${tomorrow}`,
+      {
+        headers: { "X-API-Key": ODDSPAPI_KEY },
+        cache: "no-store",
+      }
+    )
+
+    if (!res.ok) {
+      console.log("[OddsPapi] API returned non-OK status")
+      return []
+    }
+
+    const data = await res.json()
+    const allMatches = data.matches ?? []
+
+    console.log(`[OddsPapi] Found ${allMatches.length} matches for ${dateStr}`)
+
+    for (const m of allMatches) {
+      const compId = m.competition?.id?.toLowerCase() || ""
+      const compCode = ODDSPAPI_COMP_MAP[compId]
+
+      if (!compCode || !ALLOWED_COMPETITIONS.has(compCode)) {
+        continue
+      }
+
+      const meta = COMP_META[compCode]
+      const kickoff = new Date(m.kickoff)
+      const state = kickoff <= now ? (m.status === "ended" ? "done" : "live") : "soon"
+
+      // Parse score
+      let homeScore: number | null = null
+      let awayScore: number | null = null
+
+      if (m.score) {
+        if (typeof m.score.home === "number") homeScore = m.score.home
+        if (typeof m.score.away === "number") awayScore = m.score.away
+      }
+
+      matches.push({
+        id: `oddspapi-${m.id}`, // Unique ID from OddsPapi
+        competition: compCode,
+        competition_name: meta.name,
+        competition_color: meta.color,
+        home_team: m.homeTeam?.name || "?",
+        away_team: m.awayTeam?.name || "?",
+        home_team_code: makeTeamCode(m.homeTeam?.name || "?"),
+        away_team_code: makeTeamCode(m.awayTeam?.name || "?"),
+        home_score: homeScore,
+        away_score: awayScore,
+        state,
+        kickoff: m.kickoff,
+        minute: state === "live" && m.minute ? `${m.minute}'` : null,
+        // Cotes par défaut (OddsPapi n'a pas les cotes en endpoint match basique)
+        odds_1: 2.00,
+        odds_n: 3.25,
+        odds_2: 3.50,
+        odds_updated_at: now.toISOString(),
+        is_premium: false,
+      })
+    }
+
+    console.log(`[OddsPapi] Inserted ${matches.length} matches`)
+    return matches
+  } catch (e) {
+    console.error("[OddsPapi] Error fetching matches:", e)
+    return []
+  }
+}
+
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization")
   if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
@@ -290,7 +395,7 @@ export async function GET(req: Request) {
       await admin.from("matches").upsert(fetched, { onConflict: "id" })
       stats.odds = fetched.length
     } else {
-      // ── FALLBACK: The Odds API failed → Try Football-Data.org ──
+      // ── FALLBACK 1: Try Football-Data.org ──
       console.log("[cron 3h] The Odds API returned 0 matches — trying Football-Data.org fallback")
       const fdMatches = await fetchFootballDataMatches(now)
 
@@ -298,6 +403,16 @@ export async function GET(req: Request) {
         await admin.from("matches").upsert(fdMatches, { onConflict: "id" })
         stats.odds = fdMatches.length
         console.log(`[cron 3h] Football-Data fallback: inserted ${fdMatches.length} matches`)
+      } else {
+        // ── FALLBACK 2: Try OddsPapi ──
+        console.log("[cron 3h] Football-Data returned 0 matches — trying OddsPapi fallback")
+        const oddsPapiMatches = await fetchOddsPapiMatches(now)
+
+        if (oddsPapiMatches.length > 0) {
+          await admin.from("matches").upsert(oddsPapiMatches, { onConflict: "id" })
+          stats.odds = oddsPapiMatches.length
+          console.log(`[cron 3h] OddsPapi fallback: inserted ${oddsPapiMatches.length} matches`)
+        }
       }
     }
   }
