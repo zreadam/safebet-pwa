@@ -587,7 +587,8 @@ export default function DashboardPage() {
       setQuests((data ?? []) as Quest[])
     }
     fetchQuests()
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /* fetch league */
   useEffect(() => {
@@ -615,7 +616,8 @@ export default function DashboardPage() {
       }
     }
     fetchLeague()
-  }, [supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /* handle odds select */
   function handleOddsSelect(match: Match, marketKey: string, outcomeKey: string, odds: number) {
