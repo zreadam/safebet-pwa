@@ -16,8 +16,9 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
  *   API-Football  : 0 appel ici — uniquement via /api/livescore quand matchs en cours
  */
 
-const ODDS_API_KEY = process.env.THE_ODDS_API_KEY || process.env.ODDS_API_KEY
-const CRON_SECRET  = process.env.CRON_SECRET
+const ODDS_API_KEY      = process.env.THE_ODDS_API_KEY || process.env.ODDS_API_KEY
+const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY
+const CRON_SECRET       = process.env.CRON_SECRET
 
 /* ── 28 compétitions autorisées (liste de référence) ────────────────────── */
 const ALLOWED_COMPETITIONS = new Set([
@@ -102,6 +103,98 @@ function makeTeamCode(name: string): string {
   const words = name.replace(/[^a-zA-Z ]/g, "").split(" ").filter(Boolean)
   if (words.length === 1) return words[0].slice(0, 3).toUpperCase()
   return words.map(w => w[0]).join("").slice(0, 3).toUpperCase()
+}
+
+// Create synthetic match ID from teams + date (prevents duplicates across APIs)
+function makeMatchId(homeTeam: string, awayTeam: string, kickoff: string): string {
+  const date = kickoff.split("T")[0] // YYYY-MM-DD
+  const home = homeTeam.replace(/[^a-z0-9]/gi, "").slice(0, 5).toLowerCase()
+  const away = awayTeam.replace(/[^a-z0-9]/gi, "").slice(0, 5).toLowerCase()
+  return `${date}-${home}-${away}`
+}
+
+/* ── Football-Data.org Fallback ────────────────────────────────────────── */
+async function fetchFootballDataMatches(now: Date) {
+  if (!FOOTBALL_DATA_KEY) return []
+
+  const matches: object[] = []
+
+  // Map Football-Data.org competition codes to our internal codes
+  const FD_COMP_MAP: Record<string, string> = {
+    PL: "PL",
+    BL1: "BL",
+    SA: "SA",
+    FL1: "L1",
+    PPDA: "LPT",
+    PD: "LIGA",
+    ED: "ERE",
+    "TR1": "STL",
+    CL: "UCL",
+    EL: "EL",
+    ECL: "ECL",
+    WC: "CDM",
+    EC: "EURO",
+    "UNL": "NL",
+    CAN: "CAN",
+    Copa: "CA",
+    LIB: "LIB",
+  }
+
+  try {
+    // Fetch matches for today + tomorrow
+    const dateStr = now.toISOString().split("T")[0]
+    const tomorrow = new Date(now.getTime() + 86400_000).toISOString().split("T")[0]
+
+    const res = await fetch(
+      `https://api.football-data.org/v4/matches?dateFrom=${dateStr}&dateTo=${tomorrow}`,
+      {
+        headers: { "X-Auth-Token": FOOTBALL_DATA_KEY },
+        cache: "no-store",
+      }
+    )
+
+    if (!res.ok) return []
+
+    const data = await res.json()
+    const allMatches = data.matches ?? []
+
+    for (const m of allMatches) {
+      const compCode = FD_COMP_MAP[m.competition?.code]
+      if (!compCode || !ALLOWED_COMPETITIONS.has(compCode)) continue
+
+      const meta = COMP_META[compCode]
+      const kickoff = new Date(m.utcDate)
+      const state = kickoff <= now ? "live" : "soon"
+
+      matches.push({
+        id: makeMatchId(m.homeTeam.name, m.awayTeam.name, m.utcDate),
+        competition: compCode,
+        competition_name: meta.name,
+        competition_color: meta.color,
+        home_team: m.homeTeam.name,
+        away_team: m.awayTeam.name,
+        home_team_code: makeTeamCode(m.homeTeam.name),
+        away_team_code: makeTeamCode(m.awayTeam.name),
+        home_score: m.score?.fullTime?.home ?? null,
+        away_score: m.score?.fullTime?.away ?? null,
+        state,
+        kickoff: m.utcDate,
+        minute: m.status === "IN_PLAY" ? m.currentMatchDay ?? null : null,
+        // Cotes par défaut (Football-Data n'en a pas)
+        odds_1: 2.00,
+        odds_n: 3.25,
+        odds_2: 3.50,
+        odds_updated_at: now.toISOString(),
+        is_premium: false,
+      })
+    }
+
+    console.log(`[cron 3h] Football-Data fallback: ${matches.length} matchs`)
+    return matches
+  } catch (e) {
+    console.error("[cron 3h] Football-Data.org error:", e)
+    return []
+  }
 }
 
 export async function GET(req: Request) {
@@ -192,6 +285,16 @@ export async function GET(req: Request) {
     if (fetched.length > 0) {
       await admin.from("matches").upsert(fetched, { onConflict: "id" })
       stats.odds = fetched.length
+    } else {
+      // ── FALLBACK: The Odds API failed → Try Football-Data.org ──
+      console.log("[cron 3h] The Odds API returned 0 matches — trying Football-Data.org fallback")
+      const fdMatches = await fetchFootballDataMatches(now)
+
+      if (fdMatches.length > 0) {
+        await admin.from("matches").upsert(fdMatches, { onConflict: "id" })
+        stats.odds = fdMatches.length
+        console.log(`[cron 3h] Football-Data fallback: inserted ${fdMatches.length} matches`)
+      }
     }
   }
 
