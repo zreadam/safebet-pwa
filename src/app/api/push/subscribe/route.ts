@@ -28,41 +28,48 @@ async function ensureTables() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-  let body: { subscription: unknown }
   try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: "JSON invalide" }, { status: 400 })
-  }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    console.log("[push/subscribe] user:", user?.id || "none")
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  if (!body.subscription) {
-    return NextResponse.json({ error: "Subscription manquante" }, { status: 400 })
-  }
+    let body: { subscription: unknown }
+    try {
+      body = await request.json()
+    } catch (e) {
+      console.error("[push/subscribe] json parse error:", e)
+      return NextResponse.json({ error: "JSON invalide" }, { status: 400 })
+    }
 
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+    if (!body.subscription) {
+      console.error("[push/subscribe] subscription missing")
+      return NextResponse.json({ error: "Subscription manquante" }, { status: 400 })
+    }
 
-  // Try to create tables (will silently fail if exec_sql rpc doesn't exist)
-  try {
-    await ensureTables()
-  } catch {
-    // tables likely already exist
-  }
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
-  // Delete any existing subscription for this user and upsert new one
-  try {
-    await admin
+    // Try to create tables (will silently fail if exec_sql rpc doesn't exist)
+    try {
+      await ensureTables()
+    } catch (e) {
+      console.error("[push/subscribe] ensureTables error:", e)
+      // tables likely already exist
+    }
+
+    // Delete any existing subscription for this user and upsert new one
+    console.log("[push/subscribe] deleting old subscriptions for user:", user.id)
+    const deleteResult = await admin
       .from("push_subscriptions")
       .delete()
       .eq("user_id", user.id)
+    console.log("[push/subscribe] delete result:", deleteResult)
 
-    const { error } = await admin
+    console.log("[push/subscribe] inserting new subscription")
+    const { error, data } = await admin
       .from("push_subscriptions")
       .insert({
         user_id: user.id,
@@ -71,11 +78,13 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("[push/subscribe] insert error:", error)
-      return NextResponse.json({ error: "Erreur sauvegarde" }, { status: 500 })
+      return NextResponse.json({ error: error.message || "Erreur sauvegarde" }, { status: 500 })
     }
+    console.log("[push/subscribe] insert success:", data)
   } catch (err) {
-    console.error("[push/subscribe] error:", err)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error("[push/subscribe] unexpected error:", err)
+    const message = err instanceof Error ? err.message : "Erreur serveur"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
