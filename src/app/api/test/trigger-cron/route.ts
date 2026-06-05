@@ -135,7 +135,7 @@ export async function GET(req: Request) {
   )
 
   const now = new Date()
-  const result = { ok: false, message: "", matches: 0 }
+  const result: Record<string, any> = { ok: false, message: "", matches: 0 }
 
   try {
     console.log(`[test cron] Mode: ${mode}`)
@@ -143,27 +143,45 @@ export async function GET(req: Request) {
     let fdMatches: object[] = []
 
     if (mode === "force-fallback") {
-      // Force fallback Football-Data
-      console.log("[test cron] Force fallback Football-Data.org")
-      fdMatches = await fetchFootballDataMatches(now)
+      // Force fallback Football-Data — test une date avec matchs (Saison 2025/26)
+      const testDate = new Date("2025-08-15") // Premier jour Premier League saison 2025/26
+      console.log("[test cron] Force fallback Football-Data.org (date: 2025-08-15)")
+      fdMatches = await fetchFootballDataMatches(testDate)
       if (fdMatches.length > 0) {
-        await admin.from("matches").upsert(fdMatches, { onConflict: "id" })
+        // NE PAS vraiment insérer — juste tester
         result.ok = true
-        result.message = `Fallback Football-Data: ${fdMatches.length} matchs insérés`
+        result.message = `✅ Fallback Football-Data: ${fdMatches.length} matchs trouvés`
         result.matches = fdMatches.length
+        // Retourner un exemple de match pour montrer la structure
+        const example = fdMatches[0] as Record<string, unknown>
+        result["example_match"] = {
+          id: example.id,
+          home_team: example.home_team,
+          away_team: example.away_team,
+          odds_1: example.odds_1,
+          odds_n: example.odds_n,
+          odds_2: example.odds_2,
+          state: example.state,
+        }
       } else {
-        result.message = "Football-Data.org: aucun match trouvé"
+        result.message = "Football-Data.org: aucun match trouvé pour cette date"
       }
     } else {
-      // Mode normal: juste tester si Football-Data.org peut être appelé
-      fdMatches = await fetchFootballDataMatches(now)
+      // Mode normal: tester avec une date réelle
+      const testDate = new Date("2025-08-15")
+      fdMatches = await fetchFootballDataMatches(testDate)
       result.ok = true
-      result.message = `Test Football-Data.org: ${fdMatches.length} matchs disponibles`
+      result.message = `✅ Football-Data.org fonctionne: ${fdMatches.length} matchs pour 2025-08-15`
       result.matches = fdMatches.length
 
       // Afficher les premiers matchs
       if (fdMatches.length > 0) {
-        console.log("[test cron] Premiers matchs Football-Data:", fdMatches.slice(0, 3))
+        const examples = fdMatches.slice(0, 2).map((m: any) => ({
+          home: m.home_team,
+          away: m.away_team,
+          competition: m.competition,
+        }))
+        result["example_matches"] = examples
       }
     }
 
