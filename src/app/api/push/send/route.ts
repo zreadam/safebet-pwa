@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { sendPushToAll } from "./push-helper"
 
 export async function POST(req: Request) {
@@ -33,6 +34,22 @@ export async function POST(req: Request) {
 // GET pour test
 export async function GET() {
   try {
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    // Count subscribers
+    const { count, error: countError } = await admin
+      .from("push_subscriptions")
+      .select("*", { count: "exact", head: true })
+
+    if (countError) {
+      console.error("[push/send] count error:", countError)
+    }
+
+    const subscriberCount = count ?? 0
+
     await sendPushToAll({
       title: "🎯 SafeBet - Test de notification",
       body: "Ceci est un message de test du système de notifications push !",
@@ -45,7 +62,8 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      message: "✅ Notification de test envoyée à tous les utilisateurs abonnés",
+      subscribers: subscriberCount,
+      message: `✅ Notification de test envoyée à ${subscriberCount} utilisateur${subscriberCount > 1 ? "s" : ""} abonnés`,
     })
   } catch (error) {
     console.error("[push/send test] Error:", error)

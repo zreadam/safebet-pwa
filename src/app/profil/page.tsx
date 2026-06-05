@@ -170,8 +170,6 @@ export default function ProfilPage() {
       toast.error("Notifications refusées")
       return
     }
-    setPushGranted(true)
-    toast.success("Notifications activées !")
     try {
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.subscribe({
@@ -180,14 +178,20 @@ export default function ProfilPage() {
           "BCjo75bYD0dyQ8wAcOTwCSXtlW_xcmdq2SMrJTlKnSrZQgWUXBIm8eFJRHgdO65zYzSf1tSGyCNNfA3LjObeeoU"
         ),
       })
-      await fetch("/api/push/subscribe", {
+      const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subscription: sub.toJSON() }),
       })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Erreur serveur")
+      }
+      setPushGranted(true)
+      toast.success("Notifications activées !")
     } catch (err) {
       console.error("[push subscribe]", err)
-      toast.error("Erreur lors de l'abonnement push")
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'abonnement push")
     }
   }
 
@@ -466,21 +470,32 @@ export default function ProfilPage() {
               <SettingRow icon="ti-star"     label="Quêtes disponibles"  toggle={{ value: notifs,       onChange: setNotifs }} />
               <SettingRow icon="ti-users"    label="Activité des ligues" toggle={{ value: notifLeagues, onChange: setNotifLeagues }} />
               <SettingRow icon="ti-calendar" label="Rappels avant match" toggle={{ value: notifMatches, onChange: setNotifMatches }} />
-              {pushSupported && !pushGranted && (
+              {pushSupported && (
                 <div className="px-4 py-3">
-                  <button
-                    onClick={subscribeToPush}
-                    className="w-full py-3 rounded-xl border border-[var(--emerald-500)]
-                               text-[var(--emerald-500)] text-sm font-semibold flex items-center justify-center gap-2">
-                    <i className="ti ti-bell-ringing text-base" />
-                    Activer les notifications push
-                  </button>
-                </div>
-              )}
-              {pushGranted && (
-                <div className="px-4 py-3 flex items-center gap-2">
-                  <i className="ti ti-bell-check text-[var(--emerald-500)]" />
-                  <span className="text-xs text-[var(--fg-3)]">Notifications push activées</span>
+                  {pushGranted ? (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <i className="ti ti-bell-check text-[var(--emerald-500)]" />
+                        <span className="text-xs text-[var(--fg-3)]">Notifications push activées</span>
+                      </div>
+                      <button
+                        onClick={subscribeToPush}
+                        className="w-full py-2 rounded-lg border border-[var(--fg-3)]
+                                   text-[var(--fg-3)] text-xs font-medium flex items-center justify-center gap-2
+                                   hover:bg-[var(--bg-2)] transition-colors">
+                        <i className="ti ti-refresh text-base" />
+                        Réactiver
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={subscribeToPush}
+                      className="w-full py-3 rounded-xl border border-[var(--emerald-500)]
+                                 text-[var(--emerald-500)] text-sm font-semibold flex items-center justify-center gap-2">
+                      <i className="ti ti-bell-ringing text-base" />
+                      Activer les notifications push
+                    </button>
+                  )}
                 </div>
               )}
             </div>
