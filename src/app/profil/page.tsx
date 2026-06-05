@@ -183,10 +183,13 @@ export default function ProfilPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subscription: sub.toJSON() }),
       })
+      console.log("[push/subscribe] response:", res.status, res.statusText)
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || "Erreur serveur")
+        console.error("[push/subscribe] error data:", data)
+        throw new Error(data.error || `Erreur serveur (${res.status})`)
       }
+      console.log("[push/subscribe] success!")
       setPushGranted(true)
       toast.success("Notifications activées !")
     } catch (err) {
