@@ -608,16 +608,18 @@ export default function MatchDetailPage() {
   function getCompetitionBackground() {
     const comp = match?.competition
     switch (comp) {
-      case "CDM": // Coupe du Monde - Multicolore
-        return "linear-gradient(135deg, #1e40af 0%, #dc2626 25%, #16a34a 50%, #fbbf24 75%, #1e40af 100%)"
-      case "UCL": // Ligue des Champions - Bleu/Magenta
-        return "linear-gradient(135deg, #001a4d 0%, #0066ff 35%, #ff00ff 65%, #0066ff 100%)"
-      case "EL": // Europa League - Orange/Marron
-        return "linear-gradient(135deg, #7f1d1d 0%, #dc2626 30%, #f97316 60%, #ea580c 100%)"
-      case "ECL": // Conference League - Vert menthe
-        return "linear-gradient(135deg, #064e3b 0%, #10b981 40%, #34d399 70%, #6ee7b7 100%)"
-      default: // Défaut - Gris/Noir
-        return "linear-gradient(135deg, #1f2937 0%, #111827 50%, #000000 100%)"
+      case "CDM": // Coupe du Monde
+        return "url('/backgrounds/cdm.png')"
+      case "UCL": // Ligue des Champions
+        return "url('/backgrounds/ucl.png')"
+      case "EL": // Europa League
+        return "url('/backgrounds/el.png')"
+      case "ECL": // Conference League
+        return "url('/backgrounds/ecl.png')"
+      case "Bundesliga": // Bundesliga
+        return "url('/backgrounds/bundesliga.png')"
+      default: // Défaut
+        return "url('/backgrounds/bundesliga.png')"
     }
   }
 
@@ -1166,7 +1168,7 @@ export default function MatchDetailPage() {
 
       {/* ── Match header — AGRANDIS AVEC FOND DYNAMIQUE ET FLOU ── */}
       <div
-        className="w-full md:w-[35%] md:sticky md:top-0 md:h-screen md:overflow-y-auto relative px-4 md:px-5 pt-3 md:pt-6 pb-6 backdrop-blur-sm"
+        className="w-full md:w-[35%] md:sticky md:top-0 md:h-screen md:overflow-y-auto relative px-4 md:px-5 pt-3 md:pt-6 pb-6 backdrop-blur-sm bg-cover bg-center"
         style={{ backgroundImage: getCompetitionBackground() }}
       >
 
