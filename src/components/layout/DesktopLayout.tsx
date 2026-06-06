@@ -28,6 +28,28 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
     { icon: "star", label: "Quêtes", href: "/quetes" },
   ]
 
+  const handleDarkMode = () => {
+    setIsDark(!isDark)
+    const root = document.documentElement
+    if (!isDark) {
+      root.setAttribute("data-theme", "dark")
+    } else {
+      root.removeAttribute("data-theme")
+    }
+  }
+
+  const handleNotifications = () => {
+    router.push("/notifications")
+  }
+
+  const handleMessages = () => {
+    router.push("/notifications")
+  }
+
+  const handlePremium = () => {
+    router.push("/profil?tab=premium")
+  }
+
   return (
     <div className="hidden md:flex h-screen bg-[var(--bg-2)]">
       {/* ──── SIDEBAR ──── */}
@@ -72,14 +94,17 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
         <div className="flex-1" />
 
         {/* Premium Box */}
-        <div className="rounded-[12px] p-4 bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A] mb-2">
+        <div className="rounded-[12px] p-4 bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A]">
           <h4 className="text-[15px] font-bold [font-family:var(--font-display)] text-[#78350F] flex items-center gap-[6px] mb-1">
             <i className="ti ti-crown" /> Passe au Premium
           </h4>
           <p className="text-[12px] font-medium text-[#92400E] mb-3">
             Ligues privées, live, stats avancées et quêtes exclusives.
           </p>
-          <button className="w-full h-10 rounded-[10px] bg-[var(--amber-500)] text-white font-semibold text-[14px] hover:bg-[var(--amber-700)] transition-colors">
+          <button
+            onClick={handlePremium}
+            className="w-full h-10 rounded-[10px] bg-[var(--amber-500)] text-white font-semibold text-[14px] hover:bg-[var(--amber-700)] active:scale-95 transition-all"
+          >
             4,99€ / mois
           </button>
         </div>
@@ -88,7 +113,7 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
         <Link
           href="/profil"
           className={cn(
-            "flex items-center gap-[13px] px-[13px] py-[11px] rounded-[10px] transition-colors text-[15px] font-semibold",
+            "flex items-center gap-[13px] px-[13px] py-[11px] rounded-[10px] transition-colors text-[15px] font-semibold mt-2",
             pathname === "/profil"
               ? "bg-[var(--emerald-50)] text-[var(--emerald-600)]"
               : "text-[var(--fg-2)] hover:bg-[var(--bg-3)]"
@@ -101,7 +126,7 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
         {/* User Section */}
         <button
           onClick={() => router.push("/profil")}
-          className="flex items-center gap-[10px] px-[10px] py-[10px] rounded-[10px] hover:bg-[var(--bg-3)] transition-colors mt-2"
+          className="flex items-center gap-[10px] px-[10px] py-[10px] rounded-[10px] hover:bg-[var(--bg-3)] transition-colors"
         >
           <div className="w-[38px] h-[38px] rounded-full bg-[var(--emerald-500)] flex items-center justify-center flex-shrink-0">
             <span className="text-white text-[13px] font-bold [font-family:var(--font-display)]">
@@ -141,19 +166,33 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
                 <BluffBadge value={profile.balance.toFixed(2)} />
               </div>
             )}
+
+            {/* Dark Mode Button */}
             <button
-              onClick={() => setIsDark(!isDark)}
+              onClick={handleDarkMode}
               title="Mode sombre"
-              className="w-[42px] h-[42px] rounded-full bg-[var(--bg-1)] border border-[var(--border-light)] flex items-center justify-center text-[var(--fg-1)] hover:bg-[var(--bg-3)] transition-colors"
+              className="w-[42px] h-[42px] rounded-full bg-[var(--bg-1)] border border-[var(--border-light)] flex items-center justify-center text-[var(--fg-1)] hover:bg-[var(--bg-3)] active:scale-95 transition-all"
             >
               <i className={`ti ti-${isDark ? "sun" : "moon"}`} />
             </button>
-            <button className="w-[42px] h-[42px] rounded-full bg-[var(--bg-1)] border border-[var(--border-light)] flex items-center justify-center text-[var(--fg-1)] hover:bg-[var(--bg-3)] transition-colors relative">
-              <i className="ti ti-bell" />
+
+            {/* Notifications Button */}
+            <button
+              onClick={handleNotifications}
+              title="Notifications"
+              className="w-[42px] h-[42px] rounded-full bg-[var(--bg-1)] border border-[var(--border-light)] flex items-center justify-center text-[var(--fg-1)] hover:bg-[var(--bg-3)] active:scale-95 transition-all relative"
+            >
+              <i className="ti ti-bell text-[21px]" />
               <span className="absolute top-[9px] right-[10px] w-2 h-2 bg-[var(--error)] rounded-full border-2 border-[var(--bg-1)]" />
             </button>
-            <button className="w-[42px] h-[42px] rounded-full bg-[var(--bg-1)] border border-[var(--border-light)] flex items-center justify-center text-[var(--fg-1)] hover:bg-[var(--bg-3)] transition-colors">
-              <i className="ti ti-messages" />
+
+            {/* Messages Button */}
+            <button
+              onClick={handleMessages}
+              title="Messages"
+              className="w-[42px] h-[42px] rounded-full bg-[var(--bg-1)] border border-[var(--border-light)] flex items-center justify-center text-[var(--fg-1)] hover:bg-[var(--bg-3)] active:scale-95 transition-all"
+            >
+              <i className="ti ti-messages text-[21px]" />
             </button>
           </div>
         </header>
