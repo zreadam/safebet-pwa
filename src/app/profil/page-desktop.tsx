@@ -33,7 +33,7 @@ export default function ProfilDesktop() {
           <div className="text-center">
             <p className="text-[13px] text-[var(--fg-3)] uppercase tracking-wide">Statut</p>
             <p className="text-[15px] font-semibold text-[var(--fg-1)] mt-1">
-              {profile?.subscription_status === "active" ? "Premium" : "Gratuit"}
+              {profile?.tier === "premium" ? "Premium" : "Gratuit"}
             </p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function ProfilDesktop() {
       </div>
 
       {/* Premium Section */}
-      {profile?.subscription_status !== "active" && (
+      {profile?.tier !== "premium" && (
         <div className="p-6 rounded-[12px] bg-gradient-to-r from-[#FEF3C7] to-[#FDE68A] mb-6">
           <div className="flex items-start gap-4">
             <span className="text-[32px]">👑</span>
