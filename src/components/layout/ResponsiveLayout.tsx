@@ -10,17 +10,21 @@ interface ResponsiveLayoutProps {
 /**
  * ResponsiveLayout automatically selects between:
  * - Mobile: AppShell (bottom nav, optimized for small screens)
- * - Desktop: DesktopLayout (sidebar, optimized for large screens)
+ * - Desktop: DesktopLayout (sidebar + topbar, optimized for large screens)
+ * 
+ * IMPORTANT: Only ONE layout is ever rendered at a time.
+ * Mobile: md:hidden (< 768px)
+ * Desktop: hidden md:block (>= 768px)
  */
 export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   return (
     <>
-      {/* Mobile Layout */}
+      {/* ===== MOBILE LAYOUT ===== */}
       <div className="md:hidden">
         <AppShell>{children}</AppShell>
       </div>
 
-      {/* Desktop Layout */}
+      {/* ===== DESKTOP LAYOUT (completely independent) ===== */}
       <div className="hidden md:block">
         <DesktopLayout>{children}</DesktopLayout>
       </div>
