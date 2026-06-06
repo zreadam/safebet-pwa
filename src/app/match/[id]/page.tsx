@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { PremiumLock } from "@/components/ui/premium-lock"
+import { BetSlipModal } from "@/components/match/BetSlipModal"
+import { useBetSlip } from "@/contexts/BetSlipContext"
 import { cn } from "@/lib/utils"
 import type { Match } from "@/types"
 
@@ -544,6 +546,7 @@ function BetSlip({
 export default function MatchDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router  = useRouter()
+  const { addSelection } = useBetSlip()
 
   const [match, setMatch]           = useState<Match | null>(null)
   const [stats, setStats]           = useState<MatchStats | null>(null)
@@ -560,7 +563,6 @@ export default function MatchDetailPage() {
   const [activeTab, setActiveTab] = useState(0)
   const [isFav, setIsFav]         = useState(false)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
-  const [betSlip, setBetSlip]     = useState<SelectedOdds | null>(null)
 
   useEffect(() => {
     fetch(`/api/match/${id}`)
@@ -602,6 +604,23 @@ export default function MatchDetailPage() {
   const isDone = match.state === "done"
   const isSoon = match.state === "soon"
 
+  // Fonction pour obtenir le fond selon la compétition
+  function getCompetitionBackground() {
+    const comp = match?.competition
+    switch (comp) {
+      case "CDM": // Coupe du Monde - Multicolore
+        return "linear-gradient(135deg, #1e40af 0%, #dc2626 25%, #16a34a 50%, #fbbf24 75%, #1e40af 100%)"
+      case "UCL": // Ligue des Champions - Bleu/Magenta
+        return "linear-gradient(135deg, #001a4d 0%, #0066ff 35%, #ff00ff 65%, #0066ff 100%)"
+      case "EL": // Europa League - Orange/Marron
+        return "linear-gradient(135deg, #7f1d1d 0%, #dc2626 30%, #f97316 60%, #ea580c 100%)"
+      case "ECL": // Conference League - Vert menthe
+        return "linear-gradient(135deg, #064e3b 0%, #10b981 40%, #34d399 70%, #6ee7b7 100%)"
+      default: // Défaut - Gris/Noir
+        return "linear-gradient(135deg, #1f2937 0%, #111827 50%, #000000 100%)"
+    }
+  }
+
   // "Tous" visible pour tous les matchs apf- (API-Football) même si allBets est vide
   const isApfMatch  = match.id.startsWith("apf-")
   const hasRealOdds = allBets.length > 0 || !!detailedOdds || isApfMatch
@@ -639,11 +658,12 @@ export default function MatchDetailPage() {
     const k = `${market.key}:${o.key}`
     if (selectedKey === k) {
       setSelectedKey(null)
-      setBetSlip(null)
       return
     }
     setSelectedKey(k)
-    setBetSlip({
+    addSelection({
+      matchId: id,
+      matchLabel: `${match?.home_team} – ${match?.away_team}`,
       market: market.key,
       marketLabel: market.label,
       selection: o.key,
@@ -1141,34 +1161,37 @@ export default function MatchDetailPage() {
   }
 
   return (
-    <div className="max-w-[430px] mx-auto min-h-screen bg-[var(--bg-1)]
-                    flex flex-col pb-[90px]">
+    <div className="w-full min-h-screen bg-[var(--bg-1)]
+                    flex flex-col md:flex-row pb-[90px] md:pb-0">
 
-      {/* ── Match header ── */}
-      <div className="relative bg-gradient-to-b from-[var(--emerald-900)] to-[#0a3d2e] px-4 pt-3 pb-6">
+      {/* ── Match header — AGRANDIS AVEC FOND DYNAMIQUE ET FLOU ── */}
+      <div
+        className="w-full md:w-[35%] md:sticky md:top-0 md:h-screen md:overflow-y-auto relative px-4 md:px-5 pt-3 md:pt-6 pb-6 backdrop-blur-sm"
+        style={{ backgroundImage: getCompetitionBackground() }}
+      >
 
         {/* top bar */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.12)]">
-            <i className="ti ti-chevron-down text-white text-[22px]" />
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.25)] transition-colors">
+            <i className="ti ti-chevron-down text-white text-[20px]" />
           </button>
-          <span className="text-white font-semibold text-[13px] opacity-80">
+          <span className="text-white font-bold text-[13px] truncate px-2 flex-1 text-center">
             {match.competition_name}
           </span>
           <button
             onClick={() => setIsFav(f => !f)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.12)]">
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.25)] transition-colors">
             <i className={cn(
-              "ti text-[20px] transition-colors",
+              "ti text-[18px] transition-colors",
               isFav ? "ti-heart-filled text-[var(--error)]" : "ti-heart text-white"
             )} />
           </button>
         </div>
 
         {/* state badge */}
-        <div className="flex justify-center mb-3">
+        <div className="flex justify-center mb-4">
           {isLive && (
             <span className="flex items-center gap-[6px] px-3 py-1 rounded-full bg-[var(--error)]
                              text-white text-[12px] font-bold animate-pulse-live">
@@ -1190,77 +1213,140 @@ export default function MatchDetailPage() {
           )}
         </div>
 
-        {/* teams + score */}
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col items-center gap-2 w-28">
-            <div className="w-14 h-14 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center
-                            text-white font-bold text-[18px] [font-family:var(--font-display)]">
-              {match.home_team_code.slice(0, 3)}
-            </div>
-            <span className="text-white text-[13px] font-medium text-center">{match.home_team}</span>
+        {/* teams + score — AGRANDIS */}
+        <div className="space-y-5">
+          {/* Compétition + Heure */}
+          <div className="text-center">
+            <p className="text-white text-[15px] font-bold mb-2">{match.competition_name || match.competition}</p>
+            {!isLive && !isDone && (
+              <p className="text-white text-[18px] font-bold [font-family:var(--font-display)] opacity-90">
+                {new Date(match.kickoff).toLocaleTimeString("fr-FR", {
+                  hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris"
+                })}
+              </p>
+            )}
           </div>
 
-          <div className="text-center">
-            {(isLive || isDone) ? (
-              <span className="text-[48px] font-bold [font-family:var(--font-display)] text-white leading-none">
-                {match.home_score} – {match.away_score}
+          {/* Teams et Score */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-center gap-2.5 flex-1">
+              <div className="w-16 h-16 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center
+                              text-white font-bold text-[18px] [font-family:var(--font-display)]">
+                {match.home_team_code.slice(0, 3)}
+              </div>
+              <span className="text-white text-[14px] font-semibold text-center line-clamp-2 leading-tight">{match.home_team}</span>
+            </div>
+
+            <div className="text-center px-3">
+              {(isLive || isDone) ? (
+                <span className="text-[48px] font-bold [font-family:var(--font-display)] text-white leading-none">
+                  {match.home_score} – {match.away_score}
+                </span>
+              ) : (
+                <span className="text-[40px] font-bold [font-family:var(--font-display)] text-white opacity-70 leading-none">
+                  – –
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col items-center gap-2.5 flex-1">
+              <div className="w-16 h-16 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center
+                              text-white font-bold text-[18px] [font-family:var(--font-display)]">
+                {match.away_team_code.slice(0, 3)}
+              </div>
+              <span className="text-white text-[14px] font-semibold text-center line-clamp-2 leading-tight">{match.away_team}</span>
+            </div>
+          </div>
+
+          {/* État Badge */}
+          <div className="flex justify-center">
+            {isLive && (
+              <span className="flex items-center gap-[6px] px-4 py-2 rounded-full bg-[rgba(255,0,0,0.6)]
+                               text-white text-[13px] font-bold animate-pulse">
+                <span className="w-[6px] h-[6px] rounded-full bg-white animate-pulse" />
+                EN DIRECT · {match.minute}
               </span>
-            ) : (
-              <span className="text-[32px] font-bold [font-family:var(--font-display)] text-white opacity-60 leading-none">
-                – –
+            )}
+            {isSoon && (
+              <span className="px-4 py-2 rounded-full bg-[rgba(255,255,255,0.2)] text-white text-[13px] font-bold">
+                À venir
+              </span>
+            )}
+            {isDone && (
+              <span className="px-4 py-2 rounded-full bg-[rgba(255,255,255,0.2)] text-white text-[13px] font-bold">
+                Terminé
               </span>
             )}
           </div>
 
-          <div className="flex flex-col items-center gap-2 w-28">
-            <div className="w-14 h-14 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center
-                            text-white font-bold text-[18px] [font-family:var(--font-display)]">
-              {match.away_team_code.slice(0, 3)}
+          {/* Quick Info Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-[rgba(255,255,255,0.12)] rounded-[12px] p-3.5 border border-[rgba(255,255,255,0.2)]">
+              <p className="text-[12px] text-[rgba(255,255,255,0.8)] mb-1.5 font-semibold">Compétition</p>
+              <p className="text-[13px] font-bold text-white">{match.competition_name || match.competition}</p>
             </div>
-            <span className="text-white text-[13px] font-medium text-center">{match.away_team}</span>
+            <div className="bg-[rgba(255,255,255,0.12)] rounded-[12px] p-3.5 border border-[rgba(255,255,255,0.2)]">
+              <p className="text-[12px] text-[rgba(255,255,255,0.8)] mb-1.5 font-semibold">État</p>
+              <p className="text-[13px] font-bold text-white">
+                {isLive ? "EN DIRECT" : isDone ? "Terminé" : "À venir"}
+              </p>
+            </div>
+          </div>
+
+          {/* Form / Recent Results */}
+          <div className="bg-[rgba(255,255,255,0.12)] rounded-[12px] p-3.5 border border-[rgba(255,255,255,0.2)]">
+            <p className="text-[12px] text-[rgba(255,255,255,0.8)] mb-2.5 font-semibold">Forme récente</p>
+            <div className="flex gap-2">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="flex-1 h-8 rounded-[6px] bg-[rgba(255,255,255,0.2)] flex items-center justify-center"
+                >
+                  <span className="text-[12px] font-bold text-white opacity-70">-</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="border-b border-[var(--border-light)] bg-[var(--bg-1)] sticky top-0 z-10
-                      overflow-x-auto flex scrollbar-none px-2">
-        {tabs.map((t, i) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(i)}
-            className={cn(
-              "shrink-0 px-3 py-3 text-[13px] font-semibold transition-all duration-150 border-b-2 whitespace-nowrap",
-              activeTab === i
-                ? "border-[var(--emerald-500)] text-[var(--emerald-500)]"
-                : "border-transparent text-[var(--fg-3)] hover:text-[var(--fg-2)]"
-            )}>
-            {t}
-          </button>
-        ))}
+      {/* ── Right side: Tabs + Content ── */}
+      <div className="flex-1 w-full md:w-[65%] flex flex-col bg-[var(--bg-1)]">
+        {/* ── Tabs ── */}
+        <div className="border-b border-[var(--border-light)] bg-[var(--bg-1)] md:bg-[var(--bg-2)] sticky top-0 z-10
+                        overflow-x-auto flex scrollbar-none px-2 md:px-6 md:pt-6">
+          {tabs.map((t, i) => (
+            <button
+              key={t}
+              onClick={() => setActiveTab(i)}
+              className={cn(
+                "shrink-0 px-3 py-3 text-[13px] font-semibold transition-all duration-150 border-b-2 whitespace-nowrap",
+                activeTab === i
+                  ? "border-[var(--emerald-500)] text-[var(--emerald-500)]"
+                  : "border-transparent text-[var(--fg-3)] hover:text-[var(--fg-2)]"
+              )}>
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Tab content ── */}
+        <div className="flex-1 px-4 md:px-6 pt-4 md:pb-6 overflow-y-auto">
+          {match.is_premium ? (
+            <PremiumLock label="Contenu Premium — Passe au Premium pour voir les cotes">
+              <div className="opacity-30 pointer-events-none">
+                {tabContent()}
+              </div>
+            </PremiumLock>
+          ) : (
+            tabContent()
+          )}
+        </div>
+
       </div>
 
-      {/* ── Tab content ── */}
-      <div className="flex-1 px-4 pt-4">
-        {match.is_premium ? (
-          <PremiumLock label="Contenu Premium — Passe au Premium pour voir les cotes">
-            <div className="opacity-30 pointer-events-none">
-              {tabContent()}
-            </div>
-          </PremiumLock>
-        ) : (
-          tabContent()
-        )}
-      </div>
-
-      {/* ── Bet slip ── */}
-      {betSlip && (
-        <BetSlip
-          match={match}
-          sel={betSlip}
-          onClose={() => { setBetSlip(null); setSelectedKey(null) }}
-        />
-      )}
+      {/* ── Bet slip modal (sticky) ── */}
+      <BetSlipModal />
     </div>
   )
 }

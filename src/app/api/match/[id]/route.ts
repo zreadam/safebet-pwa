@@ -34,8 +34,6 @@ async function setCache(supabase: SupabaseClient, key: string, value: unknown) {
 // ⚠️ REMOVED: Les matchs amicaux statiques avec cotes par défaut ont été supprimés
 // Les matchs doivent provenir de la BDD (Supabase) via les APIs en temps réel
 // Les cotes ne doivent jamais être générées aléatoirement
-  "ami-kor-mal": { home_team:"Corée du Sud", away_team:"Mali",         home_team_code:"KOR", away_team_code:"MLI", kickoff:"2026-06-10T12:00:00Z", odds_1:1.95, odds_n:3.30, odds_2:4.00 },
-}
 
 async function apfFetch(path: string) {
   if (!FOOTBALL_API_KEY) return null

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import Script from "next/script"
 import { Toaster } from "@/components/ui/sonner"
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister"
+import { BetSlipProvider } from "@/contexts/BetSlipContext"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -42,7 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="google-adsense-account" content="ca-pub-2869486137464718" />
       </head>
       <body>
-        {children}
+        <BetSlipProvider>
+          {children}
+        </BetSlipProvider>
         <Toaster position="top-center" richColors />
         <ServiceWorkerRegister />
         {/* Google AdSense */}
