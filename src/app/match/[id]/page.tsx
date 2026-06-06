@@ -1166,11 +1166,16 @@ export default function MatchDetailPage() {
     <div className="w-full min-h-screen bg-[var(--bg-1)]
                     flex flex-col md:flex-row pb-[90px] md:pb-0">
 
-      {/* ── Match header — AGRANDIS AVEC FOND DYNAMIQUE ET FLOU ── */}
+      {/* ── Match header — AGRANDIS AVEC FOND DYNAMIQUE ET OVERLAY ── */}
       <div
-        className="w-full md:w-[35%] md:sticky md:top-0 md:h-screen md:overflow-y-auto relative px-4 md:px-5 pt-3 md:pt-6 pb-6 backdrop-blur-sm bg-cover bg-center"
+        className="w-full md:w-[35%] md:sticky md:top-0 md:h-screen md:overflow-y-auto relative px-4 md:px-5 pt-3 md:pt-6 pb-6 bg-cover bg-center"
         style={{ backgroundImage: getCompetitionBackground() }}
       >
+        {/* Overlay sombre pour améliorer la lisibilité */}
+        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+
+        {/* Content wrapper - positioned above overlay */}
+        <div className="relative z-10">
 
         {/* top bar */}
         <div className="flex items-center justify-between mb-4">
@@ -1310,6 +1315,8 @@ export default function MatchDetailPage() {
             </div>
           </div>
         </div>
+        </div>
+        {/* End of content wrapper */}
       </div>
 
       {/* ── Right side: Tabs + Content ── */}
