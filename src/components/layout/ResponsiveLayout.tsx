@@ -21,7 +21,9 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
       </div>
 
       {/* Desktop Layout */}
-      <DesktopLayout>{children}</DesktopLayout>
+      <div className="hidden md:block">
+        <DesktopLayout>{children}</DesktopLayout>
+      </div>
     </>
   )
 }
