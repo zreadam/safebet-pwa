@@ -44,7 +44,7 @@ export default function QuestesDesktop() {
             <div
               key={quest.id}
               className={`p-4 rounded-[12px] border ${
-                quest.completed
+                quest.is_done
                   ? "border-[var(--emerald-100)] bg-[var(--emerald-50)]"
                   : "border-[var(--border-light)] bg-[var(--bg-1)]"
               }`}
@@ -52,7 +52,7 @@ export default function QuestesDesktop() {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <p className="text-[15px] font-semibold text-[var(--fg-1)] flex items-center gap-2">
-                    <span>{quest.emoji || "⭐"}</span>
+                    <span>"⭐"</span>
                     {quest.title}
                   </p>
                   <p className="text-[13px] text-[var(--fg-2)] mt-1">{quest.description}</p>
@@ -66,15 +66,15 @@ export default function QuestesDesktop() {
                 <div
                   className="h-full bg-[var(--emerald-500)] transition-all"
                   style={{
-                    width: `${((quest.progress || 0) / (quest.target || 1)) * 100}%`,
+                    width: `${((quest.progress || 0) / (quest.total || 1)) * 100}%`,
                   }}
                 />
               </div>
               <div className="flex justify-between mt-2">
                 <span className="text-[11px] text-[var(--fg-3)]">
-                  {quest.progress || 0} / {quest.target || 1}
+                  {quest.progress || 0} / {quest.total || 1}
                 </span>
-                {quest.completed && (
+                {quest.is_done && (
                   <span className="text-[11px] font-semibold text-[var(--emerald-600)] flex items-center gap-1">
                     <i className="ti ti-check" /> Complète
                   </span>
