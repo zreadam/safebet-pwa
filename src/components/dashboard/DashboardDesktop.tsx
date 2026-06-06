@@ -98,7 +98,7 @@ export function DashboardDesktop({
           ) : (
             filteredMatches.map((match) => (
               <div key={match.id} onClick={() => onMatchCardClick?.(match)}>
-                <MatchCard match={match} interactive />
+                <MatchCard match={match} />
               </div>
             ))
           )}
