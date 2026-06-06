@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { useBetSlip } from "@/contexts/BetSlipContext"
 import { cn } from "@/lib/utils"
 
@@ -16,8 +17,21 @@ export function BetSlipModal() {
   const isCombo = betSlip.type === "combo" && betSlip.selections.length > 1
 
   async function placeBet() {
+    if (betSlip.stake <= 0) {
+      toast.error("La mise doit être supérieure à 0")
+      return
+    }
+
     setLoading(true)
     try {
+      console.log("Placing bet with data:", {
+        type: betSlip.type,
+        selections: betSlip.selections,
+        stake: betSlip.stake,
+        total_odds: totalOdds,
+        potential_gain: potentialGain,
+      })
+
       const res = await fetch("/api/bets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -30,13 +44,22 @@ export function BetSlipModal() {
         }),
       })
 
+      const data = await res.json()
+      console.log("Response:", { status: res.status, data })
+
       if (res.ok) {
         setSuccess(true)
+        toast.success(`Pari placé! 🎉 Gain potentiel: ${potentialGain} B`)
         setTimeout(() => {
           clear()
           setSuccess(false)
         }, 2000)
+      } else {
+        toast.error(data.error || "Impossible de placer le pari")
       }
+    } catch (error) {
+      console.error("Error placing bet:", error)
+      toast.error("Erreur réseau - Vérifiez votre connexion")
     } finally {
       setLoading(false)
     }
