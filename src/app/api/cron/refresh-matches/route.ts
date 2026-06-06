@@ -30,7 +30,7 @@ const ALLOWED_COMPETITIONS = new Set([
   // UEFA
   "UCL", "EL", "ECL",
   // Compétitions mondiales
-  "CDM", "EURO", "NL", "CAN", "LIB", "CWC", "CA", "CIC",
+  "CDM", "EURO", "NL", "CAN", "LIB", "CWC", "CA", "CIC", "AMICAL",
 ])
 
 /* ── Clés The Odds API — 23 des 28 compétitions ─────────────────────────
@@ -98,6 +98,7 @@ const COMP_META: Record<string, { name: string; color: string }> = {
   CWC:  { name: "Coupe du Monde des clubs", color: "#C9A227" },
   CA:   { name: "Copa América",             color: "#C8102E" },
   CIC:  { name: "Coupe Intercontinentale",  color: "#C9A227" },
+  AMICAL: { name: "Match Amical",             color: "#8B5CF6" },
 }
 
 function makeTeamCode(name: string): string {
@@ -256,9 +257,14 @@ async function fetchOddsPapiMatches(now: Date) {
 
     for (const m of allMatches) {
       const compId = m.competition?.id?.toLowerCase() || ""
-      const compCode = ODDSPAPI_COMP_MAP[compId]
+      let compCode = ODDSPAPI_COMP_MAP[compId]
 
-      if (!compCode || !ALLOWED_COMPETITIONS.has(compCode)) {
+      // Si pas de compétition officielle, c'est un match amical
+      if (!compCode) {
+        compCode = "AMICAL"
+      }
+
+      if (!ALLOWED_COMPETITIONS.has(compCode)) {
         continue
       }
 
