@@ -1,7 +1,7 @@
-"use client"
+import dynamic from "next/dynamic"
 
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout"
-import ProfilPageMobile from "./page-mobile"
+const ResponsiveLayout = dynamic(() => import("@/components/layout/ResponsiveLayout"), { ssr: true })
+const ProfilPageMobile = dynamic(() => import("./page-mobile"), { ssr: true })
 
 export function ProfilWrapper() {
   return (

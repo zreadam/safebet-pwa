@@ -1,7 +1,7 @@
-"use client"
+import dynamic from "next/dynamic"
 
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout"
-import NotificationsPageMobile from "./page-mobile"
+const ResponsiveLayout = dynamic(() => import("@/components/layout/ResponsiveLayout"), { ssr: true })
+const NotificationsPageMobile = dynamic(() => import("./page-mobile"), { ssr: true })
 
 export function NotificationsWrapper() {
   return (

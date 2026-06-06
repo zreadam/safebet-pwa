@@ -1,16 +1,14 @@
-"use client"
+import dynamic from "next/dynamic"
 
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout"
-import ParisPageMobile from "./page-mobile"
+const ResponsiveLayout = dynamic(() => import("@/components/layout/ResponsiveLayout"), { ssr: true })
+const ParisPageMobile = dynamic(() => import("./page-mobile"), { ssr: true })
 
 export function ParisWrapper() {
   return (
     <>
-      {/* Mobile */}
       <div className="md:hidden">
         <ParisPageMobile />
       </div>
-      {/* Desktop - réutilise le même contenu mobile dans ResponsiveLayout */}
       <div className="hidden md:block">
         <ResponsiveLayout>
           <ParisPageMobile />

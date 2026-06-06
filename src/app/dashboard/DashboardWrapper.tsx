@@ -1,23 +1,13 @@
-"use client"
+import dynamic from "next/dynamic"
 
-export const dynamic = "force-dynamic"
-
-import ResponsiveLayout from "@/components/layout/ResponsiveLayout"
-import DashboardPageMobile from "./page-mobile"
+const ResponsiveLayout = dynamic(() => import("@/components/layout/ResponsiveLayout"), { ssr: true })
+const DashboardPageMobile = dynamic(() => import("./page-mobile"), { ssr: true })
 
 export function DashboardWrapper() {
   return (
     <>
-      {/* Mobile */}
-      <div className="md:hidden">
-        <DashboardPageMobile />
-      </div>
-      {/* Desktop - réutilise le même contenu mobile dans ResponsiveLayout */}
-      <div className="hidden md:block">
-        <ResponsiveLayout>
-          <DashboardPageMobile />
-        </ResponsiveLayout>
-      </div>
+      <div className="md:hidden"><DashboardPageMobile /></div>
+      <div className="hidden md:block"><ResponsiveLayout><DashboardPageMobile /></ResponsiveLayout></div>
     </>
   )
 }
