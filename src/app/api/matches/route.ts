@@ -13,24 +13,8 @@ import { createClient } from "@/lib/supabase/server"
  *   live → done  : 130 min après le coup d'envoi (corrigé par /api/livescore si match en cours)
  */
 
-const DEMO_MATCHES = [
-  {
-    id: "demo-1", competition: "CDM", competition_name: "Coupe du Monde", competition_color: "#C9A227",
-    home_team: "France", away_team: "Brésil", home_team_code: "FRA", away_team_code: "BRA",
-    home_score: null, away_score: null, state: "soon",
-    kickoff: new Date(Date.now() + 2 * 3600_000).toISOString(),
-    odds_1: 2.10, odds_n: 3.40, odds_2: 3.50,
-    odds_updated_at: new Date().toISOString(), is_premium: false,
-  },
-  {
-    id: "demo-2", competition: "LIB", competition_name: "Copa Libertadores", competition_color: "#1a3a5e",
-    home_team: "River Plate", away_team: "Boca Juniors", home_team_code: "RIV", away_team_code: "BOC",
-    home_score: null, away_score: null, state: "soon",
-    kickoff: new Date(Date.now() + 5 * 3600_000).toISOString(),
-    odds_1: 2.05, odds_n: 3.55, odds_2: 3.40,
-    odds_updated_at: new Date().toISOString(), is_premium: false,
-  },
-]
+// ⚠️ REMOVED: DEMO_MATCHES avec cotes par défaut
+// Les matchs doivent provenir UNIQUEMENT de la BDD (Supabase)
 
 export async function GET() {
   const supabase = await createClient()
@@ -47,7 +31,7 @@ export async function GET() {
     .order("kickoff", { ascending: true })
 
   if (!matches || matches.length === 0) {
-    return NextResponse.json(DEMO_MATCHES)
+    return NextResponse.json([])
   }
 
   /* ── Transitions d'état basées sur l'heure (0 appel API externe) ── */

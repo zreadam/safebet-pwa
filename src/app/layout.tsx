@@ -8,10 +8,15 @@ export const metadata: Metadata = {
   title: "Safebet — Parie avec tes amis",
   description: "Paris fictifs entre amis autour du football. 100% fun, zéro risque.",
   manifest: "/manifest.json",
+  applicationName: "Safebet",
+  creator: "Safebet Team",
+  openGraph: { url: "https://safebet.app", type: "website" },
+  alternates: { canonical: "https://safebet.app" },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Safebet" },
   icons: {
     icon: [
-      { url: "/logo.png", type: "image/png" },
+      { url: "/safebet-logo.png", type: "image/png", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
     ],
     apple: "/icons/icon-192.png",
   },

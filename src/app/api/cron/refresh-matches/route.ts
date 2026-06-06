@@ -186,10 +186,10 @@ async function fetchFootballDataMatches(now: Date) {
         state,
         kickoff: m.utcDate,
         minute: m.status === "IN_PLAY" ? m.currentMatchDay ?? null : null,
-        // Cotes par défaut (Football-Data n'en a pas)
-        odds_1: 2.00,
-        odds_n: 3.25,
-        odds_2: 3.50,
+        // Pas de cotes disponibles via Football-Data
+        odds_1: null,
+        odds_n: null,
+        odds_2: null,
         odds_updated_at: now.toISOString(),
         is_premium: false,
       })
@@ -295,10 +295,10 @@ async function fetchOddsPapiMatches(now: Date) {
         state,
         kickoff: m.kickoff,
         minute: state === "live" && m.minute ? `${m.minute}'` : null,
-        // Cotes par défaut (OddsPapi n'a pas les cotes en endpoint match basique)
-        odds_1: 2.00,
-        odds_n: 3.25,
-        odds_2: 3.50,
+        // Pas de cotes disponibles via OddsPapi (endpoint basique)
+        odds_1: null,
+        odds_n: null,
+        odds_2: null,
         odds_updated_at: now.toISOString(),
         is_premium: false,
       })

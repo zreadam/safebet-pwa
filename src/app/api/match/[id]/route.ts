@@ -31,33 +31,9 @@ async function setCache(supabase: SupabaseClient, key: string, value: unknown) {
   })
 }
 
-// Même liste que dans /api/matches/route.ts — fallback si Supabase ne l'a pas encore
-const STATIC_FRIENDLIES: Record<string, { home_team: string; away_team: string; home_team_code: string; away_team_code: string; kickoff: string; odds_1: number; odds_n: number; odds_2: number }> = {
-  "ami-ned-alg": { home_team:"Pays-Bas",    away_team:"Algérie",      home_team_code:"NED", away_team_code:"ALG", kickoff:"2026-06-03T18:00:00Z", odds_1:1.70, odds_n:3.80, odds_2:4.50 },
-  "ami-pol-nig": { home_team:"Pologne",      away_team:"Nigeria",      home_team_code:"POL", away_team_code:"NGA", kickoff:"2026-06-03T18:00:00Z", odds_1:1.85, odds_n:3.50, odds_2:4.20 },
-  "ami-con-den": { home_team:"Congo DR",     away_team:"Danemark",     home_team_code:"COD", away_team_code:"DEN", kickoff:"2026-06-03T19:00:00Z", odds_1:4.50, odds_n:3.40, odds_2:1.80 },
-  "ami-bur-aus": { home_team:"Burkina Faso", away_team:"Australie",    home_team_code:"BFA", away_team_code:"AUS", kickoff:"2026-06-03T14:00:00Z", odds_1:3.20, odds_n:3.20, odds_2:2.20 },
-  "ami-gha-sco": { home_team:"Ghana",        away_team:"Écosse",       home_team_code:"GHA", away_team_code:"SCO", kickoff:"2026-06-03T19:00:00Z", odds_1:2.80, odds_n:3.20, odds_2:2.50 },
-  "ami-mar-ita": { home_team:"Maroc",        away_team:"Italie",       home_team_code:"MAR", away_team_code:"ITA", kickoff:"2026-06-04T19:00:00Z", odds_1:3.20, odds_n:3.10, odds_2:2.25 },
-  "ami-tun-mex": { home_team:"Tunisie",      away_team:"Mexique",      home_team_code:"TUN", away_team_code:"MEX", kickoff:"2026-06-04T18:00:00Z", odds_1:3.50, odds_n:3.20, odds_2:2.10 },
-  "ami-cam-rou": { home_team:"Cameroun",     away_team:"Roumanie",     home_team_code:"CMR", away_team_code:"ROU", kickoff:"2026-06-04T18:00:00Z", odds_1:2.60, odds_n:3.20, odds_2:2.70 },
-  "ami-fra-bel": { home_team:"France",       away_team:"Belgique",     home_team_code:"FRA", away_team_code:"BEL", kickoff:"2026-06-05T19:00:00Z", odds_1:1.90, odds_n:3.50, odds_2:4.00 },
-  "ami-esp-bra": { home_team:"Espagne",      away_team:"Brésil",       home_team_code:"ESP", away_team_code:"BRA", kickoff:"2026-06-05T20:00:00Z", odds_1:2.30, odds_n:3.20, odds_2:3.10 },
-  "ami-por-and": { home_team:"Portugal",     away_team:"Andorre",      home_team_code:"POR", away_team_code:"AND", kickoff:"2026-06-05T18:00:00Z", odds_1:1.08, odds_n:8.00, odds_2:20.0 },
-  "ami-bel-isl": { home_team:"Belgique",     away_team:"Islande",      home_team_code:"BEL", away_team_code:"ISL", kickoff:"2026-06-05T19:00:00Z", odds_1:1.45, odds_n:4.20, odds_2:7.00 },
-  "ami-arg-ecu": { home_team:"Argentine",    away_team:"Équateur",     home_team_code:"ARG", away_team_code:"ECU", kickoff:"2026-06-06T23:00:00Z", odds_1:1.60, odds_n:3.80, odds_2:5.50 },
-  "ami-all-slo": { home_team:"Allemagne",    away_team:"Slovaquie",    home_team_code:"GER", away_team_code:"SVK", kickoff:"2026-06-06T17:00:00Z", odds_1:1.45, odds_n:4.20, odds_2:7.50 },
-  "ami-eng-fin": { home_team:"Angleterre",   away_team:"Finlande",     home_team_code:"ENG", away_team_code:"FIN", kickoff:"2026-06-06T19:00:00Z", odds_1:1.35, odds_n:5.00, odds_2:8.00 },
-  "ami-ita-nor": { home_team:"Italie",       away_team:"Norvège",      home_team_code:"ITA", away_team_code:"NOR", kickoff:"2026-06-07T19:00:00Z", odds_1:2.00, odds_n:3.30, odds_2:3.80 },
-  "ami-esp-and": { home_team:"Espagne",      away_team:"Andorre",      home_team_code:"ESP", away_team_code:"AND", kickoff:"2026-06-07T20:00:00Z", odds_1:1.06, odds_n:9.00, odds_2:25.0 },
-  "ami-bra-col": { home_team:"Brésil",       away_team:"Colombie",     home_team_code:"BRA", away_team_code:"COL", kickoff:"2026-06-07T23:00:00Z", odds_1:1.70, odds_n:3.60, odds_2:5.00 },
-  "ami-usa-uru": { home_team:"États-Unis",   away_team:"Uruguay",      home_team_code:"USA", away_team_code:"URU", kickoff:"2026-06-08T22:00:00Z", odds_1:2.50, odds_n:3.20, odds_2:2.80 },
-  "ami-fra-lux": { home_team:"France",       away_team:"Luxembourg",   home_team_code:"FRA", away_team_code:"LUX", kickoff:"2026-06-08T19:00:00Z", odds_1:1.15, odds_n:7.00, odds_2:15.0 },
-  "ami-jpn-par": { home_team:"Japon",        away_team:"Paraguay",     home_team_code:"JPN", away_team_code:"PAR", kickoff:"2026-06-09T11:00:00Z", odds_1:1.90, odds_n:3.40, odds_2:4.00 },
-  "ami-sen-col": { home_team:"Sénégal",      away_team:"Colombie",     home_team_code:"SEN", away_team_code:"COL", kickoff:"2026-06-09T19:00:00Z", odds_1:2.80, odds_n:3.20, odds_2:2.50 },
-  "ami-mex-cos": { home_team:"Mexique",      away_team:"Costa Rica",   home_team_code:"MEX", away_team_code:"CRC", kickoff:"2026-06-09T23:00:00Z", odds_1:1.75, odds_n:3.40, odds_2:4.50 },
-  "ami-cro-gre": { home_team:"Croatie",      away_team:"Grèce",        home_team_code:"CRO", away_team_code:"GRE", kickoff:"2026-06-10T18:00:00Z", odds_1:1.90, odds_n:3.40, odds_2:4.00 },
-  "ami-all-bos": { home_team:"Allemagne",    away_team:"Bosnie",       home_team_code:"GER", away_team_code:"BIH", kickoff:"2026-06-10T17:00:00Z", odds_1:1.50, odds_n:4.00, odds_2:6.50 },
+// ⚠️ REMOVED: Les matchs amicaux statiques avec cotes par défaut ont été supprimés
+// Les matchs doivent provenir de la BDD (Supabase) via les APIs en temps réel
+// Les cotes ne doivent jamais être générées aléatoirement
   "ami-kor-mal": { home_team:"Corée du Sud", away_team:"Mali",         home_team_code:"KOR", away_team_code:"MLI", kickoff:"2026-06-10T12:00:00Z", odds_1:1.95, odds_n:3.30, odds_2:4.00 },
 }
 
@@ -396,24 +372,8 @@ export async function GET(
   // ID API-Football : "apf-1536930" → fixtureId = 1536930
   const fixtureId = id.startsWith("apf-") ? id.slice(4) : null
 
-  // 2. Si pas en Supabase : matchs amicaux statiques d'abord, puis API-Football
+  // 2. Si pas en Supabase et c'est un ID API-Football, chercher via API
   let matchData = match
-  if (!matchData && id.startsWith("ami-") && STATIC_FRIENDLIES[id]) {
-    const sf = STATIC_FRIENDLIES[id]
-    const now = new Date()
-    matchData = {
-      id,
-      competition: "AMI",
-      competition_name: "Matchs amicaux",
-      competition_color: "#6B7280",
-      ...sf,
-      home_score: null,
-      away_score: null,
-      minute: null,
-      state: new Date(sf.kickoff) <= now ? "done" : "soon",
-      is_premium: false,
-    }
-  }
   if (!matchData && fixtureId) {
     const fixtures = await apfFetch(`fixtures?id=${fixtureId}`)
     const f = fixtures?.[0]
@@ -430,7 +390,7 @@ export async function GET(
         home_score: f.goals?.home ?? null, away_score: f.goals?.away ?? null,
         state, kickoff: f.fixture.date,
         minute: f.fixture.status?.elapsed ? `${f.fixture.status.elapsed}'` : null,
-        odds_1: 2.00, odds_n: 3.25, odds_2: 3.50, is_premium: false,
+        odds_1: null, odds_n: null, odds_2: null, is_premium: false,
         // IDs internes pour fetcher la forme (préfixés _ pour ne pas polluer le client)
         _homeTeamId: f.teams.home.id,
         _awayTeamId: f.teams.away.id,

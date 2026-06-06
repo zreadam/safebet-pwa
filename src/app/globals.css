@@ -184,3 +184,19 @@ body {
   animation: shimmer 1.5s infinite;
   border-radius: 6px;
 }
+
+/* Flag Icons - Country Flags */
+@import 'flag-icons/css/flag-icons.min.css';
+
+/* Customisation pour drapeaux ronds */
+.fi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Style des drapeaux ronds */
+.rounded-full.fi {
+  border-radius: 9999px;
+  overflow: hidden;
+}

@@ -23,7 +23,7 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
   const navItems = [
     { icon: "home", label: "Accueil", href: "/dashboard" },
     { icon: "ball-football", label: "Matchs", href: "/paris" },
-    { icon: "ticket", label: "Mes paris", href: "/paris" },
+    { icon: "ticket", label: "Mes paris", href: "/bets" },
     { icon: "trophy", label: "Ligues", href: "/ligues" },
     { icon: "star", label: "Quêtes", href: "/quetes" },
   ]

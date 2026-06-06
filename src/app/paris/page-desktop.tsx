@@ -100,102 +100,131 @@ export default function ParisDesktop() {
         <div className="text-center py-12">
           <p className="text-[var(--fg-3)]">Chargement des matchs...</p>
         </div>
+      ) : matches.length === 0 ? (
+        <div className="text-center py-12 bg-[var(--bg-2)] rounded-[12px] border border-[var(--border-light)]">
+          <div className="text-4xl mb-3">⚽</div>
+          <p className="text-[var(--fg-1)] font-semibold mb-1">Aucun match disponible</p>
+          <p className="text-[var(--fg-3)] text-sm">Les matchs seront bientôt disponibles. Reviens plus tard!</p>
+        </div>
       ) : filteredMatches.length === 0 ? (
-        <div className="text-center py-12 bg-[var(--bg-1)] rounded-[12px]">
-          <p className="text-[var(--fg-3)]">Aucun match ce jour</p>
+        <div className="text-center py-12 bg-[var(--bg-2)] rounded-[12px] border border-[var(--border-light)]">
+          <div className="text-4xl mb-3">📅</div>
+          <p className="text-[var(--fg-1)] font-semibold mb-1">Aucun match ce jour</p>
+          <p className="text-[var(--fg-3)] text-sm">Sélectionne une autre date ou reviens demain</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {filteredMatches.map((match) => (
-            <Link
-              key={match.id}
-              href={`/paris?match=${match.id}`}
-              className={cn(
-                "p-5 rounded-[12px] border-2 bg-[var(--bg-1)] hover:shadow-[var(--shadow-hover)] hover:border-[var(--emerald-500)] transition-all cursor-pointer",
-                match.state === "live" && "border-t-4 border-t-[var(--emerald-500)]"
-              )}
-              style={{
-                borderColor:
-                  match.state === "live"
-                    ? getCompetitionColor(match)
-                    : "var(--border-light)",
-              }}
-            >
-              {/* Competition Badge */}
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className="text-[11px] font-semibold text-white px-2 py-1 rounded-full"
-                  style={{ backgroundColor: getCompetitionColor(match) }}
-                >
-                  {match.competition}
-                </span>
-                {match.state === "live" && (
-                  <span className="text-[11px] font-semibold bg-[var(--error)] text-white px-2 py-1 rounded-full flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                    EN DIRECT
-                  </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredMatches.map((match) => {
+            const cc = getCompetitionColor(match)
+            const live = match.state === "live"
+            const done = match.state === "done"
+
+            return (
+              <Link
+                key={match.id}
+                href={`/match/${match.id}`}
+                className={cn(
+                  "rounded-[12px] border border-[var(--border-light)]",
+                  "bg-[var(--bg-1)] p-4 cursor-pointer transition-all duration-200",
+                  "hover:-translate-y-1 hover:shadow-[var(--shadow-hover)] active:scale-95",
+                  "animate-card-in",
+                  live && "border-t-2 border-t-[var(--emerald-500)]",
+                  "[box-shadow:var(--shadow-card)]"
                 )}
-              </div>
-
-              {/* Teams */}
-              <div className="space-y-3 mb-4">
-                {/* Home Team */}
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-[13px] font-semibold text-[var(--fg-1)]">
-                      {match.home_team}
-                    </p>
-                  </div>
-                  <p className="text-[24px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)] ml-2">
-                    {match.home_score ?? "—"}
-                  </p>
-                </div>
-
-                {/* Divider */}
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-px bg-[var(--border-light)]" />
-                  {match.minute && match.state === "live" && (
-                    <span className="text-[11px] text-[var(--fg-3)]">{match.minute}</span>
+              >
+                {/* Top row */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="flex items-center gap-[7px] text-xs font-semibold text-[var(--fg-2)]">
+                    <span
+                      className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center text-[9px] font-bold text-white"
+                      style={{ background: cc }}
+                    >
+                      {match.competition[0]}
+                    </span>
+                    {match.competition_name || match.competition}
+                  </span>
+                  {live && (
+                    <span className="flex items-center gap-[5px] text-[10px] font-semibold bg-[var(--error)] text-white px-2 py-1 rounded-full animate-pulse">
+                      <span className="w-[5px] h-[5px] rounded-full bg-white" />
+                      LIVE {match.minute}
+                    </span>
                   )}
-                  <div className="flex-1 h-px bg-[var(--border-light)]" />
+                  {done && <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-[var(--emerald-50)] text-[var(--emerald-900)]">Terminé</span>}
+                  {!live && !done && (
+                    <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-[#EFF6FF] text-[#1E3A5F]">
+                      {new Date(match.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
+                    </span>
+                  )}
                 </div>
 
-                {/* Away Team */}
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-[13px] font-semibold text-[var(--fg-1)]">
-                      {match.away_team}
-                    </p>
+                {/* Teams - Same as mobile design */}
+                <div className="flex items-center justify-between mb-[14px]">
+                  {/* Home Team */}
+                  <div className="flex flex-col items-center gap-2 flex-1">
+                    <div
+                      className="rounded-full flex items-center justify-center font-bold w-8 h-8 text-xs [font-family:var(--font-display)]"
+                      style={{
+                        background: `${cc}22`,
+                        color: cc,
+                      }}
+                    >
+                      {match.home_team_code?.slice(0, 3)}
+                    </div>
+                    <span className="text-xs font-medium text-[var(--fg-2)] text-center">{match.home_team}</span>
                   </div>
-                  <p className="text-[24px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)] ml-2">
-                    {match.away_score ?? "—"}
-                  </p>
-                </div>
-              </div>
 
-              {/* Odds */}
-              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[var(--border-light)]">
-                <div className="text-center p-2 bg-[var(--bg-2)] rounded-lg hover:bg-[var(--emerald-50)] transition-colors">
-                  <p className="text-[11px] text-[var(--fg-3)] mb-1">1</p>
-                  <p className="text-[15px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
-                    {match.odds_1?.toFixed(2) ?? "—"}
-                  </p>
+                  {/* Score */}
+                  <div className="text-center px-2">
+                    <div className="font-bold text-xl leading-none [font-family:var(--font-display)] text-[var(--fg-1)] whitespace-nowrap">
+                      {(live || done) && match.home_score !== null && match.away_score !== null
+                        ? `${match.home_score} – ${match.away_score}`
+                        : "–"}
+                    </div>
+                    {live && <div className="text-xs text-[var(--fg-3)] mt-1">{match.minute}</div>}
+                    {!live && !done && (
+                      <div className="text-xs text-[var(--fg-3)] mt-1">
+                        {new Date(match.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Away Team */}
+                  <div className="flex flex-col items-center gap-2 flex-1">
+                    <div
+                      className="rounded-full flex items-center justify-center font-bold w-8 h-8 text-xs [font-family:var(--font-display)]"
+                      style={{
+                        background: `${cc}22`,
+                        color: cc,
+                      }}
+                    >
+                      {match.away_team_code?.slice(0, 3)}
+                    </div>
+                    <span className="text-xs font-medium text-[var(--fg-2)] text-center">{match.away_team}</span>
+                  </div>
                 </div>
-                <div className="text-center p-2 bg-[var(--bg-2)] rounded-lg hover:bg-[var(--emerald-50)] transition-colors">
-                  <p className="text-[11px] text-[var(--fg-3)] mb-1">N</p>
-                  <p className="text-[15px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
-                    {match.odds_n?.toFixed(2) ?? "—"}
-                  </p>
+
+                {/* Odds - Bottom */}
+                <div className="flex gap-2">
+                  {(["1", "N", "2"] as const).map((key, i) => {
+                    const oddsVal = [match.odds_1, match.odds_n, match.odds_2][i]
+                    const hasOdds = oddsVal !== null && oddsVal !== undefined
+                    const oddsDisplay = hasOdds ? oddsVal.toFixed(2) : "–"
+
+                    return (
+                      <div
+                        key={key}
+                        className="flex-1 border rounded-lg py-2 text-center bg-[var(--bg-2)]"
+                        style={{ opacity: hasOdds ? 1 : 0.6 }}
+                      >
+                        <span className="block text-[10px] text-[var(--fg-3)] mb-1">{key}</span>
+                        <span className="block font-bold text-sm [font-family:var(--font-display)] text-[var(--fg-1)]">{oddsDisplay}</span>
+                      </div>
+                    )
+                  })}
                 </div>
-                <div className="text-center p-2 bg-[var(--bg-2)] rounded-lg hover:bg-[var(--emerald-50)] transition-colors">
-                  <p className="text-[11px] text-[var(--fg-3)] mb-1">2</p>
-                  <p className="text-[15px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
-                    {match.odds_2?.toFixed(2) ?? "—"}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>

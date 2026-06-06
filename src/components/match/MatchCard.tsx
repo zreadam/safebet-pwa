@@ -113,6 +113,8 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
           const isSelected = selectedOdds === selKey
           const isWinner = winner === key
           const isLoser  = done && winner !== null && winner !== key
+          const hasOdds = oddsVal !== null && oddsVal !== undefined
+          const oddsDisplay = hasOdds ? oddsVal.toFixed(2) : "–"
 
           if (done) {
             // Matchs terminés : pas cliquables, affichage résultat
@@ -127,7 +129,7 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
                 <span className={cn("block text-[10px] mb-[3px]",
                   isWinner ? "text-white" : "text-[var(--fg-3)]")}>{key}</span>
                 <span className={cn("block font-bold text-[16px] [font-family:var(--font-display)]",
-                  isWinner ? "text-white" : "text-[var(--fg-2)]")}>{oddsVal.toFixed(2)}</span>
+                  isWinner ? "text-white" : "text-[var(--fg-2)]")}>{oddsDisplay}</span>
                 {isWinner && <span className="block text-[9px] text-white/80 mt-[2px]">✓ Résultat</span>}
               </div>
             )
@@ -135,19 +137,20 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
 
           return (
             <button key={key}
-                    onClick={() => onOddsSelect?.(m, "result", key, oddsVal)}
-                    disabled={done}
+                    onClick={() => hasOdds && onOddsSelect?.(m, "result", key, oddsVal!)}
+                    disabled={done || !hasOdds}
                     className={cn(
                       "flex-1 border rounded-[var(--radius-btn)] py-2 text-center",
                       "transition-all duration-150 active:scale-95",
-                      isSelected
+                      !hasOdds && "opacity-50 cursor-not-allowed",
+                      isSelected && hasOdds
                         ? "bg-[var(--emerald-500)] border-[var(--emerald-500)]"
                         : "border-[var(--border-light)] bg-[var(--bg-2)] hover:bg-[var(--bg-3)]"
                     )}>
               <span className={cn("block text-[10px] mb-[3px]",
                 isSelected ? "text-white" : "text-[var(--fg-3)]")}>{key}</span>
               <span className={cn("block font-bold text-[16px] [font-family:var(--font-display)]",
-                isSelected ? "text-white" : "text-[var(--fg-1)]")}>{oddsVal.toFixed(2)}</span>
+                isSelected ? "text-white" : "text-[var(--fg-1)]")}>{oddsDisplay}</span>
             </button>
           )
         })}
