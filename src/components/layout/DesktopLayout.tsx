@@ -20,20 +20,10 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
   const { profile } = useProfile()
   const [isDark, setIsDark] = useState(false)
 
-  const pageTitle = {
-    "/dashboard": "Accueil",
-    "/paris": "Matchs",
-    "/classements": "Classements",
-    "/ligues": "Ligues",
-    "/quetes": "Quêtes",
-    "/notifications": "Notifications",
-    "/profil": "Réglages",
-  }[pathname] || "Accueil"
-
   const navItems = [
     { icon: "home", label: "Accueil", href: "/dashboard" },
     { icon: "ball-football", label: "Matchs", href: "/paris" },
-    { icon: "ticket", label: "Mes paris", href: "/classements" },
+    { icon: "ticket", label: "Mes paris", href: "/paris" },
     { icon: "trophy", label: "Ligues", href: "/ligues" },
     { icon: "star", label: "Quêtes", href: "/quetes" },
   ]
@@ -63,7 +53,7 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => (
             <Link
-              key={item.href}
+              key={item.href + item.label}
               href={item.href}
               className={cn(
                 "flex items-center gap-[13px] px-[13px] py-[11px] rounded-[10px] transition-colors text-[15px] font-semibold",
