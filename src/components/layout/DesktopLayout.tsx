@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { useProfile } from "@/hooks/useProfile"
@@ -43,12 +44,19 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
       <aside className="w-[248px] sticky top-0 h-screen bg-[var(--bg-1)] border-r border-[var(--border-light)] flex flex-col p-[22px_16px] gap-2 overflow-y-auto">
         {/* Brand */}
         <div className="flex items-center gap-[10px] px-2 pb-[18px]">
-          <div className="w-[42px] h-[42px] rounded-[11px] bg-[var(--emerald-500)] flex items-center justify-center">
-            <span className="text-white font-bold text-lg">⚽</span>
-          </div>
-          <span className="text-[22px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
-            Safebet
-          </span>
+          <Link href="/dashboard" className="flex items-center gap-2 flex-1">
+            <Image
+              src="/logo.png"
+              alt="Safebet"
+              width={42}
+              height={42}
+              className="rounded-[11px]"
+              priority
+            />
+            <span className="text-[22px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
+              Safebet
+            </span>
+          </Link>
         </div>
 
         {/* Navigation */}
