@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { PremiumLock } from "@/components/ui/premium-lock"
-import { BetSlipModal } from "@/components/match/BetSlipModal"
 import { useBetSlip } from "@/contexts/BetSlipContext"
 import { cn } from "@/lib/utils"
 import type { Match } from "@/types"
@@ -1353,9 +1352,6 @@ export default function MatchDetailPage() {
         </div>
 
       </div>
-
-      {/* ── Bet slip modal (sticky) ── */}
-      <BetSlipModal />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import Script from "next/script"
 import { Toaster } from "@/components/ui/sonner"
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister"
 import { BetSlipProvider } from "@/contexts/BetSlipContext"
+import { BetSlipModal } from "@/components/match/BetSlipModal"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -45,6 +46,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <BetSlipProvider>
           {children}
+          {/* Global BetSlipModal - persists across all pages */}
+          <BetSlipModal />
         </BetSlipProvider>
         <Toaster position="top-center" richColors />
         <ServiceWorkerRegister />
