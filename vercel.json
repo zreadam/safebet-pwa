@@ -3,14 +3,6 @@
     {
       "path": "/api/cron/refresh-matches",
       "schedule": "0 1 * * *"
-    },
-    {
-      "path": "/api/cron/live-events",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/settle-bets",
-      "schedule": "*/5 * * * *"
     }
   ]
 }
