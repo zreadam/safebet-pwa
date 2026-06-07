@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation"
 import { PremiumLock } from "@/components/ui/premium-lock"
 import { useBetSlip } from "@/contexts/BetSlipContext"
 import { cn } from "@/lib/utils"
+import { getFlagPath, getCountryName } from "@/lib/flags"
+import { getCountryCodeForTeam, isInternationalCompetition } from "@/lib/team-to-country"
 import type { Match } from "@/types"
 
 /* ──────────────────────── types ────────────────────────────── */
@@ -1233,35 +1235,77 @@ export default function MatchDetailPage() {
             )}
           </div>
 
-          {/* Teams et Score */}
+          {/* Teams et Score — Avec drapeaux pour les matchs internationaux */}
           <div className="flex items-center justify-between gap-3">
-            <div className="flex flex-col items-center gap-2.5 flex-1">
-              <div className="w-16 h-16 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center
-                              text-white font-bold text-[18px] [font-family:var(--font-display)]">
-                {match.home_team_code.slice(0, 3)}
-              </div>
-              <span className="text-white text-[14px] font-semibold text-center line-clamp-2 leading-tight">{match.home_team}</span>
-            </div>
+            {(() => {
+              const homeCountryCode = getCountryCodeForTeam(match.home_team)
+              const awayCountryCode = getCountryCodeForTeam(match.away_team)
+              const showFlags = isInternationalCompetition(match.competition) || (homeCountryCode && awayCountryCode)
 
-            <div className="text-center px-3">
-              {(isLive || isDone) ? (
-                <span className="text-[48px] font-bold [font-family:var(--font-display)] text-white leading-none">
-                  {match.home_score} – {match.away_score}
-                </span>
-              ) : (
-                <span className="text-[40px] font-bold [font-family:var(--font-display)] text-white opacity-70 leading-none">
-                  – –
-                </span>
-              )}
-            </div>
+              return (
+                <>
+                  <div className="flex flex-col items-center gap-2.5 flex-1">
+                    {showFlags && homeCountryCode ? (
+                      <>
+                        <img
+                          src={getFlagPath(homeCountryCode)}
+                          alt={match.home_team}
+                          className="w-16 h-16 rounded-lg object-cover shadow-lg"
+                          title={getCountryName(homeCountryCode)}
+                        />
+                        <span className="text-white text-[12px] font-semibold text-center line-clamp-2 leading-tight">
+                          {getCountryName(homeCountryCode)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-16 h-16 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center
+                                        text-white font-bold text-[18px] [font-family:var(--font-display)]">
+                          {match.home_team_code.slice(0, 3)}
+                        </div>
+                        <span className="text-white text-[12px] font-semibold text-center line-clamp-2 leading-tight">{match.home_team}</span>
+                      </>
+                    )}
+                  </div>
 
-            <div className="flex flex-col items-center gap-2.5 flex-1">
-              <div className="w-16 h-16 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center
-                              text-white font-bold text-[18px] [font-family:var(--font-display)]">
-                {match.away_team_code.slice(0, 3)}
-              </div>
-              <span className="text-white text-[14px] font-semibold text-center line-clamp-2 leading-tight">{match.away_team}</span>
-            </div>
+                  <div className="text-center px-3">
+                    {(isLive || isDone) ? (
+                      <span className="text-[48px] font-bold [font-family:var(--font-display)] text-white leading-none">
+                        {match.home_score} – {match.away_score}
+                      </span>
+                    ) : (
+                      <span className="text-[40px] font-bold [font-family:var(--font-display)] text-white opacity-70 leading-none">
+                        – –
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col items-center gap-2.5 flex-1">
+                    {showFlags && awayCountryCode ? (
+                      <>
+                        <img
+                          src={getFlagPath(awayCountryCode)}
+                          alt={match.away_team}
+                          className="w-16 h-16 rounded-lg object-cover shadow-lg"
+                          title={getCountryName(awayCountryCode)}
+                        />
+                        <span className="text-white text-[12px] font-semibold text-center line-clamp-2 leading-tight">
+                          {getCountryName(awayCountryCode)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-16 h-16 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center
+                                        text-white font-bold text-[18px] [font-family:var(--font-display)]">
+                          {match.away_team_code.slice(0, 3)}
+                        </div>
+                        <span className="text-white text-[12px] font-semibold text-center line-clamp-2 leading-tight">{match.away_team}</span>
+                      </>
+                    )}
+                  </div>
+                </>
+              )
+            })()}
           </div>
 
           {/* État Badge */}
