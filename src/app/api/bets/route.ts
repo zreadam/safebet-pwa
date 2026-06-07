@@ -98,12 +98,15 @@ export async function POST(request: Request) {
 
     // Update quest
     try {
-      await supabase.rpc("increment_quest", {
+      const questResult = await supabase.rpc("increment_quest", {
         p_user_id: user.id,
         p_quest_key: "daily_bets",
         p_period: new Date().toISOString().slice(0, 10),
       })
-    } catch { /* ignore */ }
+      console.log("Quest increment result:", questResult)
+    } catch (error) {
+      console.error("Quest increment error:", error)
+    }
 
     return NextResponse.json({
       bets: insertedBets,

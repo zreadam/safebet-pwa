@@ -7,7 +7,6 @@ import Link from "next/link"
 import { useProfile } from "@/hooks/useProfile"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { OddsPreferenceSelector } from "@/components/dashboard/OddsPreferenceSelector"
 import { getDisplayOdds, getMarketLabel } from "@/lib/odds-formatter"
 import type { Match } from "@/types"
 
@@ -15,16 +14,7 @@ export default function DashboardDesktop() {
   const { profile } = useProfile()
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedMarket, setSelectedMarket] = useState<string>("result")
-  const [showSelector, setShowSelector] = useState(false)
-
-  useEffect(() => {
-    // Load preference from localStorage
-    const saved = localStorage.getItem("dashboard-odds-preference")
-    if (saved) {
-      setSelectedMarket(saved)
-    }
-  }, [])
+  const selectedMarket = "result" // Force "result" market
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -83,18 +73,9 @@ export default function DashboardDesktop() {
               Cotes affichées: {getMarketLabel(selectedMarket)}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowSelector(true)}
-              className="px-4 py-2 rounded-lg bg-[var(--bg-2)] hover:bg-[var(--bg-3)] text-[var(--fg-2)] hover:text-[var(--fg-1)] transition-colors text-sm font-semibold flex items-center gap-2"
-            >
-              <i className="ti ti-settings text-[16px]" />
-              Personnaliser
-            </button>
-            <Link href="/paris" className="text-[var(--emerald-600)] font-semibold hover:underline">
-              Voir tous →
-            </Link>
-          </div>
+          <Link href="/paris" className="text-[var(--emerald-600)] font-semibold hover:underline">
+            Voir tous →
+          </Link>
         </div>
 
         {loading ? (
@@ -202,10 +183,6 @@ export default function DashboardDesktop() {
         )}
       </div>
 
-      {/* Preferences Modal */}
-      {showSelector && (
-        <OddsPreferenceSelector onClose={() => setShowSelector(false)} />
-      )}
     </div>
   )
 }
