@@ -51,15 +51,25 @@ export async function POST(req: Request) {
       .eq("id", match_id)
 
     if (updateError) {
+      console.error("Match update error:", updateError)
       return NextResponse.json({ error: updateError.message }, { status: 400 })
     }
 
+    console.log(`[SIMULATE] Match ${match_id} updated to done: ${home_score}-${away_score}`)
+
     // Get all bets for this match that are still pending
-    const { data: bets } = await supabase
+    const { data: bets, error: betsError } = await supabase
       .from("bets")
       .select("*, profiles(balance)")
       .eq("match_id", match_id)
       .eq("status", "pending")
+
+    console.log(`[SIMULATE] Found ${bets?.length ?? 0} pending bets for match ${match_id}`)
+    if (betsError) console.error("Bets fetch error:", betsError)
+
+    // Track settlement stats
+    let settledCount = 0
+    let skippedComboCount = 0
 
     // Calculate winnings and settle bets
     if (bets && bets.length > 0) {
@@ -108,7 +118,8 @@ export async function POST(req: Request) {
             })
             console.log(`[Combo Bet ${bet.id}] ALL DONE: All selections matched = ${isWon}`)
           } else {
-            console.log(`[Combo Bet ${bet.id}] SKIP: Not all matches done yet`)
+            skippedComboCount++
+            console.log(`[Combo Bet ${bet.id}] SKIP: Only ${groupMatches?.filter(m => m.state === "done").length}/${groupMatches?.length} matches done`)
           }
         } else {
           // SIMPLE BET: Check if selection matches result
@@ -120,17 +131,24 @@ export async function POST(req: Request) {
         // Only update status if we should settle this bet
         if (!shouldSettle) continue
 
+        settledCount++
         // Calculate amount
         let amountToCredit = isWon ? bet.potential_gain : 0
 
         // Update bet status
-        await supabase
+        const { error: updateBetError } = await supabase
           .from("bets")
           .update({
             status: isWon ? "won" : "lost",
             settled_at: new Date().toISOString(),
           })
           .eq("id", bet.id)
+
+        if (updateBetError) {
+          console.error(`Error updating bet ${bet.id}:`, updateBetError)
+        } else {
+          console.log(`[Settlement] Bet ${bet.id} settled as ${isWon ? "WON" : "LOST"}`)
+        }
 
         // Track balance update
         if (bet.user_id) {
@@ -157,7 +175,9 @@ export async function POST(req: Request) {
       result,
       home_score,
       away_score,
-      settled_bets: bets?.length ?? 0,
+      total_bets: bets?.length ?? 0,
+      settled_bets: settledCount,
+      skipped_combos: skippedComboCount,
     })
   } catch (error) {
     console.error("Error:", error)

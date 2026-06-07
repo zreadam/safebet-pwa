@@ -236,8 +236,10 @@ export default function TestMatchesPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
 
-      toast.success(`Match terminé: ${homeScore} - ${awayScore} 🏁\nLes paris sont maintenant réglés! 🎯`, {
-        duration: 3000,
+      const message = `Match: ${homeScore} - ${awayScore} 🏁\n✓ ${data.settled_bets} paris réglés${data.skipped_combos > 0 ? `\n⏳ ${data.skipped_combos} combos en attente` : ""}`
+
+      toast.success(message, {
+        duration: 4000,
       })
       setSelectedMatch(null)
       setHomeScore(0)
@@ -557,13 +559,35 @@ export default function TestMatchesPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-[var(--fg-3)] mb-1">Cotes</p>
-                    <div className="flex gap-2 text-sm font-bold text-[var(--fg-1)]">
-                      <span>{m.odds_1}</span>
-                      <span>{m.odds_n}</span>
-                      <span>{m.odds_2}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-xs text-[var(--fg-3)] mb-1">Cotes</p>
+                      <div className="flex gap-2 text-sm font-bold text-[var(--fg-1)]">
+                        <span>{m.odds_1}</span>
+                        <span>{m.odds_n}</span>
+                        <span>{m.odds_2}</span>
+                      </div>
                     </div>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Supprimer le match ${m.home_team} vs ${m.away_team} ?`)) return
+                        try {
+                          const res = await fetch("/api/test-matches/delete", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ match_id: m.id }),
+                          })
+                          if (!res.ok) throw new Error("Erreur")
+                          toast.success("Match supprimé ✓")
+                          await fetchTestMatches()
+                        } catch (err) {
+                          toast.error("Erreur lors de la suppression")
+                        }
+                      }}
+                      className="px-3 py-2 rounded-lg bg-[var(--error)] text-white font-semibold text-xs hover:opacity-90 transition"
+                    >
+                      🗑️ Supprimer
+                    </button>
                   </div>
                 </div>
               ))
