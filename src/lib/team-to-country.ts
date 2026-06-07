@@ -43,11 +43,6 @@ export const NATIONAL_TEAMS: Record<string, string> = {
   "Georgia": "GE",
   "Armenia": "AM",
   "Azerbaijan": "AZ",
-  "Kazakhstan": "KZ",
-  "Uzbekistan": "UZ",
-  "Turkmenistan": "TM",
-  "Kyrgyzstan": "KG",
-  "Tajikistan": "TJ",
   "Belarus": "BY",
   "Lithuania": "LT",
   "Latvia": "LV",
@@ -119,11 +114,6 @@ export const NATIONAL_TEAMS: Record<string, string> = {
   "Palestine": "PS",
   "Israel": "IL",
   "Afghanistan": "AF",
-  "Kyrgyzstan": "KG",
-  "Tajikistan": "TJ",
-  "Turkmenistan": "TM",
-  "Uzbekistan": "UZ",
-  "Kazakhstan": "KZ",
 
   // Africa
   "Egypt": "EG",
