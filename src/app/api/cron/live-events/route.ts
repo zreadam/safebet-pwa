@@ -146,11 +146,11 @@ export async function GET(req: Request) {
   // - When match ends (with final result)
   // - Bet settlement notifications (from settle-bets cron)
 
-  // ── 2. Check for fixtures starting in ~10-20 minutes ────────────────
+  // ── 2. Check for fixtures starting in 3-30 minutes ────────────────
   // Send notification with the ACTUAL number of minutes until kickoff
   try {
-    const in10min = new Date(now.getTime() + 10 * 60 * 1000)
-    const in20min = new Date(now.getTime() + 20 * 60 * 1000)
+    const in3min = new Date(now.getTime() + 3 * 60 * 1000)
+    const in30min = new Date(now.getTime() + 30 * 60 * 1000)
     const todayStr = now.toISOString().slice(0, 10)
 
     const soonData = await fetchFootball(`/fixtures?date=${todayStr}&status=NS`) as { response: Fixture[] }
@@ -158,7 +158,7 @@ export async function GET(req: Request) {
 
     for (const f of soonFixtures) {
       const kickoff = new Date(f.fixture.date)
-      if (kickoff >= in10min && kickoff <= in20min) {
+      if (kickoff >= in3min && kickoff <= in30min) {
         // Calculate actual minutes until kickoff
         const minutesUntilKickoff = Math.round((kickoff.getTime() - now.getTime()) / (60 * 1000))
         const key = `soon_${f.fixture.id}_${minutesUntilKickoff}min`
