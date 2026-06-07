@@ -62,6 +62,7 @@ export interface Bet {
   placed_at: string
   settled_at?: string
   is_live: boolean
+  bet_group_id?: string
 }
 
 export interface League {

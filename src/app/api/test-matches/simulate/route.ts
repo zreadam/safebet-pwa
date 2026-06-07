@@ -54,12 +54,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 400 })
     }
 
-    // Get all bets for this match
+    // Get all bets for this match that are still pending
     const { data: bets } = await supabase
       .from("bets")
       .select("*, profiles(balance)")
       .eq("match_id", match_id)
-      .neq("status", "settled")
+      .eq("status", "pending")
 
     // Calculate winnings and settle bets
     if (bets && bets.length > 0) {
@@ -81,25 +81,44 @@ export async function POST(req: Request) {
 
       for (const bet of bets) {
         let isWon = false
+        let shouldSettle = false
 
         if (bet.bet_group_id) {
-          // COMBO BET: Check if ALL bets in group are winning
+          // COMBO BET: Only settle when ALL matches in group are done
           const { data: groupBets } = await supabase
             .from("bets")
             .select("id, match_id, selection")
             .eq("bet_group_id", bet.bet_group_id)
 
-          isWon = (groupBets ?? []).every(gb => {
-            const matchResult = matchResults[gb.match_id] || "N"
-            return gb.selection === matchResult
-          })
+          const { data: groupMatches } = await supabase
+            .from("matches")
+            .select("id, state")
+            .in("id", (groupBets ?? []).map(gb => gb.match_id))
 
-          console.log(`[Combo Bet ${bet.id}] Group: All selections matched = ${isWon}`)
+          // Only settle if ALL matches in group are "done"
+          const allMatchesDone = (groupMatches ?? []).every(m => m.state === "done")
+
+          if (allMatchesDone) {
+            shouldSettle = true
+            isWon = (groupBets ?? []).every(gb => {
+              const matchResult = matchResults[gb.match_id] || "N"
+              const won = gb.selection === matchResult
+              console.log(`  [Match ${gb.match_id}] Selection: ${gb.selection}, Result: ${matchResult}, Won: ${won}`)
+              return won
+            })
+            console.log(`[Combo Bet ${bet.id}] ALL DONE: All selections matched = ${isWon}`)
+          } else {
+            console.log(`[Combo Bet ${bet.id}] SKIP: Not all matches done yet`)
+          }
         } else {
           // SIMPLE BET: Check if selection matches result
+          shouldSettle = true
           isWon = bet.selection === result
           console.log(`[Simple Bet ${bet.id}] Selection: ${bet.selection}, Result: ${result}, Won: ${isWon}`)
         }
+
+        // Only update status if we should settle this bet
+        if (!shouldSettle) continue
 
         // Calculate amount
         let amountToCredit = isWon ? bet.potential_gain : 0

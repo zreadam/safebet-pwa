@@ -51,6 +51,10 @@ export async function POST(request: Request) {
 
     // Place all bets (simple or combo)
     const betGroupId = type === "combo" ? `${user.id}-${Date.now()}` : null
+    const totalOdds = type === "combo"
+      ? selections.reduce((acc: number, sel: any) => acc * sel.odds, 1)
+      : null
+
     const betsToInsert = selections.map((sel: any) => ({
       user_id: user.id,
       match_id: sel.matchId,
@@ -58,8 +62,10 @@ export async function POST(request: Request) {
       market: sel.market,
       selection: sel.selection,
       odds: sel.odds,
-      stake: type === "simple" ? stake : stake, // For combo, stake is per bet
-      potential_gain: stake * sel.odds,
+      stake: type === "simple" ? stake : stake, // Stake is same for all
+      potential_gain: type === "combo"
+        ? stake * totalOdds  // For combo: stake × (cote1 × cote2 × cote3...)
+        : stake * sel.odds,  // For simple: stake × cote
       status: "pending",
       is_live: false,
       placed_at: new Date().toISOString(),
