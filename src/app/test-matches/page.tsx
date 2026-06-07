@@ -236,11 +236,31 @@ export default function TestMatchesPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
 
-      toast.success(`Match terminé: ${homeScore} - ${awayScore} 🏁`)
+      toast.success(`Match terminé: ${homeScore} - ${awayScore} 🏁\nLes paris sont maintenant réglés! 🎯`, {
+        duration: 3000,
+      })
       setSelectedMatch(null)
       setHomeScore(0)
       setAwayScore(0)
       await fetchTestMatches()
+
+      // Show button to check bets
+      setTimeout(() => {
+        toast.custom((t) => (
+          <div className="flex gap-2">
+            <span>Vérifie les résultats dans Mes paris !</span>
+            <button
+              onClick={() => {
+                router.push("/paris")
+                toast.dismiss(t)
+              }}
+              className="px-3 py-1 bg-[var(--emerald-500)] text-white rounded-lg font-semibold"
+            >
+              Voir →
+            </button>
+          </div>
+        ), { duration: 5000 })
+      }, 1000)
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la simulation")
     } finally {

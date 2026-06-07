@@ -106,7 +106,7 @@ export default function ParisDesktop() {
   const [filter, setFilter] = useState<Filter>("all")
 
   useEffect(() => {
-    fetch("/api/bets")
+    fetch("/api/bets", { cache: "no-store" })
       .then(r => r.json())
       .then(data => { setBets(data ?? []); setLoading(false) })
       .catch(() => setLoading(false))
