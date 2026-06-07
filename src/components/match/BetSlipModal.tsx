@@ -9,6 +9,7 @@ export function BetSlipModal() {
   const { betSlip, setType, setStake, removeSelection, getTotalOdds, getPotentialGain, clear } = useBetSlip()
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   if (betSlip.selections.length === 0) return null
 
@@ -67,34 +68,64 @@ export function BetSlipModal() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 md:bottom-4 md:right-4 md:left-auto md:top-auto md:w-[300px] z-50">
-      {/* Mobile: bottom sheet */}
-      <div className="md:hidden animate-slide-up">
-        <div className="max-h-[65vh] overflow-y-auto bg-[var(--bg-1)] border-t border-[var(--border-light)] rounded-t-[20px] shadow-[var(--shadow-modal)] p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-bold text-[15px] [font-family:var(--font-display)] text-[var(--fg-1)]">
-              {isCombo ? "Pari Combiné" : "Pari Simple"}
-            </span>
-            <button
-              onClick={clear}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--bg-3)]"
-            >
-              <i className="ti ti-x text-[15px] text-[var(--fg-2)]" />
-            </button>
-          </div>
+      {/* Mobile: compact or expanded */}
+      <div className="md:hidden">
+        {!isExpanded ? (
+          // Compact view - single line
+          <button
+            onClick={() => setIsExpanded(true)}
+            className="w-full bg-[var(--bg-1)] border-t border-[var(--border-light)] rounded-t-[20px] shadow-[var(--shadow-modal)] p-3 flex items-center justify-between hover:bg-[var(--bg-2)] transition-colors"
+          >
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span className="text-[12px] font-semibold text-[var(--fg-3)]">
+                {betSlip.selections.length} sélection{betSlip.selections.length > 1 ? "s" : ""}
+              </span>
+              <span className="text-[14px] font-bold [font-family:var(--font-display)] text-[var(--emerald-500)]">
+                {totalOdds.toFixed(2)}
+              </span>
+              <span className="text-[13px] font-semibold text-[var(--fg-1)]">
+                → {potentialGain} B
+              </span>
+            </div>
+            <i className="ti ti-chevron-up text-[18px] text-[var(--fg-2)]" />
+          </button>
+        ) : (
+          // Expanded view - full sheet
+          <div className="animate-slide-up max-h-[65vh] overflow-y-auto bg-[var(--bg-1)] border-t border-[var(--border-light)] rounded-t-[20px] shadow-[var(--shadow-modal)] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-bold text-[15px] [font-family:var(--font-display)] text-[var(--fg-1)]">
+                {isCombo ? "Pari Combiné" : "Pari Simple"}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--bg-3)]"
+                >
+                  <i className="ti ti-chevron-down text-[15px] text-[var(--fg-2)]" />
+                </button>
+                <button
+                  onClick={clear}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--bg-3)]"
+                >
+                  <i className="ti ti-x text-[15px] text-[var(--fg-2)]" />
+                </button>
+              </div>
+            </div>
 
-          <BetSlipContent
-            betSlip={betSlip}
-            totalOdds={totalOdds}
-            potentialGain={potentialGain}
-            isCombo={isCombo}
-            setType={setType}
-            setStake={setStake}
-            removeSelection={removeSelection}
-            loading={loading}
-            success={success}
-            placeBet={placeBet}
-          />
-        </div>
+            <BetSlipContent
+              betSlip={betSlip}
+              totalOdds={totalOdds}
+              potentialGain={potentialGain}
+              isCombo={isCombo}
+              setType={setType}
+              setStake={setStake}
+              removeSelection={removeSelection}
+              loading={loading}
+              success={success}
+              placeBet={placeBet}
+            />
+          </div>
+        )}
       </div>
 
       {/* Desktop: sticky bottom-right popup */}

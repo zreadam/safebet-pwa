@@ -1111,9 +1111,9 @@ export default function MatchDetailPage() {
             </div>
           )}
 
-          {/* Forme récente (résumé) */}
+          {/* Forme récente (résumé) - Hidden on mobile */}
           {(formHome || formAway) && (
-            <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)] p-4 [box-shadow:var(--shadow-card)]">
+            <div className="hidden md:flex bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)] p-4 [box-shadow:var(--shadow-card)] flex-col">
               <p className="text-[14px] font-bold text-[var(--fg-1)] mb-3">Forme récente (5 matchs)</p>
               {[{ label: match.home_team, form: formHome }, { label: match.away_team, form: formAway }].map(({ label, form }) => form && (
                 <div key={label} className="mb-3 last:mb-0">
@@ -1285,8 +1285,8 @@ export default function MatchDetailPage() {
             )}
           </div>
 
-          {/* Quick Info Cards */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Quick Info Cards - Hidden on mobile */}
+          <div className="hidden md:grid grid-cols-2 gap-3">
             <div className="bg-[rgba(255,255,255,0.12)] rounded-[12px] p-3.5 border border-[rgba(255,255,255,0.2)]">
               <p className="text-[12px] text-[rgba(255,255,255,0.8)] mb-1.5 font-semibold">Compétition</p>
               <p className="text-[13px] font-bold text-white">{match.competition_name || match.competition}</p>
@@ -1299,8 +1299,8 @@ export default function MatchDetailPage() {
             </div>
           </div>
 
-          {/* Form / Recent Results */}
-          <div className="bg-[rgba(255,255,255,0.12)] rounded-[12px] p-3.5 border border-[rgba(255,255,255,0.2)]">
+          {/* Form / Recent Results - Hidden on mobile */}
+          <div className="hidden md:flex bg-[rgba(255,255,255,0.12)] rounded-[12px] p-3.5 border border-[rgba(255,255,255,0.2)] flex-col">
             <p className="text-[12px] text-[rgba(255,255,255,0.8)] mb-2.5 font-semibold">Forme récente</p>
             <div className="flex gap-2">
               {[1, 2, 3].map((i) => (
