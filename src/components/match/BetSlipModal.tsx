@@ -67,7 +67,7 @@ export function BetSlipModal() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 md:bottom-4 md:right-4 md:left-auto md:top-auto md:w-[300px] z-50">
+    <div className="fixed inset-x-0 bottom-[80px] md:bottom-4 md:right-4 md:left-auto md:top-auto md:w-[300px] z-50">
       {/* Mobile: compact or expanded */}
       <div className="md:hidden">
         {!isExpanded ? (
