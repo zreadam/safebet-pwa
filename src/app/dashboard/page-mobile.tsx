@@ -11,7 +11,7 @@ import { BluffBadge } from "@/components/ui/bluff-badge"
 import { useProfile } from "@/hooks/useProfile"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import type { Match, Quest, League, LeagueMember } from "@/types"
+import type { Match, League, LeagueMember } from "@/types"
 
 /* ─────────────────────────── types ─────────────────────────── */
 interface SelectedOdds {
@@ -157,40 +157,6 @@ function BetSlip({
 }
 
 /* ─────────────────── quest mini-card ───────────────────────── */
-function QuestMiniCard({ q }: { q: Quest }) {
-  const done = q.is_done
-  return (
-    <div className={cn(
-      "min-w-[160px] rounded-[var(--radius-card)] border border-[var(--border-light)] p-3 flex flex-col gap-2",
-      "[box-shadow:var(--shadow-card)]",
-      done ? "bg-[var(--emerald-50)]" : "bg-[var(--bg-1)]"
-    )}>
-      <div className="flex items-center justify-between">
-        <span className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center text-[16px]",
-          done ? "bg-[var(--emerald-100)]" : "bg-[var(--bg-3)]"
-        )}>
-          {done
-            ? <i className="ti ti-circle-check text-[var(--emerald-500)]" />
-            : <i className="ti ti-bolt text-[var(--fg-2)]" />}
-        </span>
-        <span className="text-[12px] font-bold [font-family:var(--font-display)] text-[var(--emerald-500)]">
-          +{q.reward} B
-        </span>
-      </div>
-      <p className="text-[13px] font-semibold text-[var(--fg-1)] leading-tight">{q.title}</p>
-      {/* progress bar */}
-      <div className="w-full h-[4px] bg-[var(--bg-3)] rounded-full overflow-hidden">
-        <div
-          className="h-full bg-[var(--emerald-500)] rounded-full transition-all duration-500"
-          style={{ width: `${Math.min(100, (q.progress / q.total) * 100)}%` }}
-        />
-      </div>
-      <p className="text-[10px] text-[var(--fg-3)]">{q.progress}/{q.total}</p>
-    </div>
-  )
-}
-
 /* ─────────────────── livescore card ────────────────────────── */
 interface LiveMatch {
   id: number
@@ -528,7 +494,6 @@ interface LiveScoreEntry {
 export default function DashboardPage() {
   const { profile, refetch: refetchProfile } = useProfile()
   const [matches, setMatches]     = useState<Match[]>([])
-  const [quests, setQuests]       = useState<Quest[]>([])
   const [league, setLeague]       = useState<League | null>(null)
   const [loading, setLoading]     = useState(true)
   const [activeComp, setActiveComp] = useState("all")
@@ -571,22 +536,6 @@ export default function DashboardPage() {
     poll()
     const iv = setInterval(poll, 5 * 60 * 1000)
     return () => clearInterval(iv)
-  }, [])
-
-  /* fetch quests */
-  useEffect(() => {
-    async function fetchQuests() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from("quest_progress")
-        .select("*")
-        .eq("user_id", user.id)
-        .limit(3)
-      setQuests((data ?? []) as Quest[])
-    }
-    fetchQuests()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /* fetch league */
@@ -702,7 +651,7 @@ export default function DashboardPage() {
 
         {/* ── AppBar ── */}
         <header className="sticky top-0 z-30 bg-[var(--bg-1)] border-b border-[var(--border-light)]
-                           px-4 py-3 flex items-center justify-between">
+                           px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-[10px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Safebet" className="w-9 h-9 rounded-xl object-contain" />
@@ -818,25 +767,6 @@ export default function DashboardPage() {
               }
             </div>
           </section>
-
-          {/* ── Quêtes du jour ── */}
-          {quests.length > 0 && (
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[19px] font-semibold [font-family:var(--font-display)]
-                               text-[var(--fg-1)] tracking-tight">
-                  Tes quêtes du jour
-                </h2>
-                <Link href="/quetes"
-                      className="text-[12px] font-semibold text-[var(--emerald-500)] hover:underline">
-                  Tout voir →
-                </Link>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-                {quests.map(q => <QuestMiniCard key={q.id} q={q} />)}
-              </div>
-            </section>
-          )}
 
           {/* ── Ta ligue ── */}
           {league && (

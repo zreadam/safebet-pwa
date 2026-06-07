@@ -27,6 +27,17 @@ interface QuestDef {
 const QUEST_DEFINITIONS: QuestDef[] = [
   // Daily
   {
+    key: "daily_bets",
+    title: "Paris du jour",
+    description: "Place 5 paris aujourd'hui",
+    reward: 10,
+    type: "daily",
+    total: 5,
+    is_premium: false,
+    icon: "ti-ticket",
+    reset_in: "demain",
+  },
+  {
     key: "daily_first_bet",
     title: "Premier pari du jour",
     description: "Place ton premier pari aujourd'hui",
