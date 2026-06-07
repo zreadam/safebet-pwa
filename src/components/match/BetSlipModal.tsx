@@ -67,14 +67,14 @@ export function BetSlipModal() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-[80px] md:bottom-4 md:right-4 md:left-auto md:top-auto md:w-[300px] z-50">
+    <div className="fixed inset-x-0 bottom-[30px] md:bottom-4 md:right-4 md:left-auto md:top-auto md:w-[300px] z-50 px-4 md:px-0">
       {/* Mobile: compact or expanded */}
       <div className="md:hidden">
         {!isExpanded ? (
           // Compact view - single line
           <button
             onClick={() => setIsExpanded(true)}
-            className="w-full bg-[var(--bg-1)] border-t border-[var(--border-light)] rounded-t-[20px] shadow-[var(--shadow-modal)] p-3 flex items-center justify-between hover:bg-[var(--bg-2)] transition-colors"
+            className="w-full bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[16px] shadow-[var(--shadow-modal)] p-3 flex items-center justify-between hover:bg-[var(--bg-2)] transition-colors"
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <span className="text-[12px] font-semibold text-[var(--fg-3)]">
@@ -91,7 +91,7 @@ export function BetSlipModal() {
           </button>
         ) : (
           // Expanded view - full sheet
-          <div className="animate-slide-up max-h-[65vh] overflow-y-auto bg-[var(--bg-1)] border-t border-[var(--border-light)] rounded-t-[20px] shadow-[var(--shadow-modal)] p-4">
+          <div className="animate-slide-up max-h-[65vh] overflow-y-auto bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[16px] shadow-[var(--shadow-modal)] p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="font-bold text-[15px] [font-family:var(--font-display)] text-[var(--fg-1)]">
                 {isCombo ? "Pari Combiné" : "Pari Simple"}
