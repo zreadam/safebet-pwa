@@ -8,7 +8,6 @@ import { toast } from "sonner"
 import AppShell from "@/components/layout/AppShell"
 import { MatchCard } from "@/components/match/MatchCard"
 import { BluffBadge } from "@/components/ui/bluff-badge"
-import RewardedAdPanel from "@/components/RewardedAdPanel"
 import { useProfile } from "@/hooks/useProfile"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -722,9 +721,6 @@ export default function DashboardPage() {
         </header>
 
         <div className="px-4 pt-5 pb-4 flex flex-col gap-6">
-
-          {/* ── Rewarded Ads Panel ── */}
-          <RewardedAdPanel />
 
           {/* ── Livescore ── */}
           <LiveScoreSection />
