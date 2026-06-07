@@ -146,9 +146,10 @@ export async function GET(req: Request) {
   // - When match ends (with final result)
   // - Bet settlement notifications (from settle-bets cron)
 
-  // ── 2. Check for fixtures starting in ~15 minutes ────────────────
+  // ── 2. Check for fixtures starting in ~10-20 minutes ────────────────
+  // Send notification with the ACTUAL number of minutes until kickoff
   try {
-    const in15min = new Date(now.getTime() + 15 * 60 * 1000)
+    const in10min = new Date(now.getTime() + 10 * 60 * 1000)
     const in20min = new Date(now.getTime() + 20 * 60 * 1000)
     const todayStr = now.toISOString().slice(0, 10)
 
@@ -157,8 +158,10 @@ export async function GET(req: Request) {
 
     for (const f of soonFixtures) {
       const kickoff = new Date(f.fixture.date)
-      if (kickoff >= in15min && kickoff <= in20min) {
-        const key = `soon_${f.fixture.id}_15min`
+      if (kickoff >= in10min && kickoff <= in20min) {
+        // Calculate actual minutes until kickoff
+        const minutesUntilKickoff = Math.round((kickoff.getTime() - now.getTime()) / (60 * 1000))
+        const key = `soon_${f.fixture.id}_${minutesUntilKickoff}min`
         const { data: existing } = await admin
           .from("live_events_sent")
           .select("key")
@@ -172,7 +175,7 @@ export async function GET(req: Request) {
 
           try {
             await sendPushToAll({
-              title: `⏰ Match dans 15 minutes`,
+              title: `⏰ Match dans ${minutesUntilKickoff} minute${minutesUntilKickoff > 1 ? 's' : ''}`,
               body: `${homeTeam} – ${awayTeam} à ${kickoffTime}`,
               icon: "/logo.png",
               data: { matchId: String(f.fixture.id) },
