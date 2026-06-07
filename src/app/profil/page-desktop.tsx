@@ -41,7 +41,7 @@ export default function ProfilDesktop() {
               src={getFlagPath(profile.country)}
               alt={getCountryName(profile.country)}
               title={getCountryName(profile.country)}
-              className="w-8 h-8 rounded-sm object-cover"
+              className="w-8 h-8 rounded-full object-cover"
             />
           )}
           <h2 className="text-[24px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">

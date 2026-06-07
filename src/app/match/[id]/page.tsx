@@ -1250,7 +1250,7 @@ export default function MatchDetailPage() {
                         <img
                           src={getFlagPath(homeCountryCode)}
                           alt={match.home_team}
-                          className="w-16 h-16 rounded-lg object-cover shadow-lg"
+                          className="w-16 h-16 rounded-full object-cover shadow-lg"
                           title={getCountryName(homeCountryCode)}
                         />
                         <span className="text-white text-[12px] font-semibold text-center line-clamp-2 leading-tight">
@@ -1286,7 +1286,7 @@ export default function MatchDetailPage() {
                         <img
                           src={getFlagPath(awayCountryCode)}
                           alt={match.away_team}
-                          className="w-16 h-16 rounded-lg object-cover shadow-lg"
+                          className="w-16 h-16 rounded-full object-cover shadow-lg"
                           title={getCountryName(awayCountryCode)}
                         />
                         <span className="text-white text-[12px] font-semibold text-center line-clamp-2 leading-tight">

@@ -368,7 +368,7 @@ export default function ProfilPage() {
                         src={getFlagPath(profile.country)}
                         alt={getCountryName(profile.country)}
                         title={getCountryName(profile.country)}
-                        className="w-6 h-6 rounded-sm object-cover"
+                        className="w-6 h-6 rounded-full object-cover"
                       />
                     )}
                     <p className="text-[20px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
