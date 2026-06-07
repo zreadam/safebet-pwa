@@ -192,6 +192,49 @@ export async function GET(req: Request) {
     stats.errors.push(`soon-check: ${err}`)
   }
 
+  // ── 2b. Check for fixtures starting in < 1 minute ──────────────────
+  // Send urgent notification when match is about to start
+  try {
+    const in1min = new Date(now.getTime() + 1 * 60 * 1000)
+    const todayStr = now.toISOString().slice(0, 10)
+
+    const urgentData = await fetchFootball(`/fixtures?date=${todayStr}&status=NS`) as { response: Fixture[] }
+    const urgentFixtures = urgentData.response ?? []
+
+    for (const f of urgentFixtures) {
+      const kickoff = new Date(f.fixture.date)
+      if (kickoff >= now && kickoff < in1min) {
+        const key = `urgent_${f.fixture.id}_kickoff`
+        const { data: existing } = await admin
+          .from("live_events_sent")
+          .select("key")
+          .eq("key", key)
+          .maybeSingle()
+
+        if (!existing) {
+          const homeTeam = f.teams.home.name
+          const awayTeam = f.teams.away.name
+          const kickoffTime = kickoff.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })
+
+          try {
+            await sendPushToAll({
+              title: `🏁 Match commence maintenant !`,
+              body: `${homeTeam} – ${awayTeam} à ${kickoffTime}`,
+              icon: "/logo.png",
+              data: { matchId: String(f.fixture.id) },
+            })
+            stats.notifs_sent++
+            await admin.from("live_events_sent").insert({ key, created_at: now.toISOString() })
+          } catch (err) {
+            stats.errors.push(`urgent-notif-${f.fixture.id}: ${err}`)
+          }
+        }
+      }
+    }
+  } catch (err) {
+    stats.errors.push(`urgent-check: ${err}`)
+  }
+
   // ── 3. Check for finished matches ────────────────────────────────
   // We now only send notifications when matches end (not during the match)
   try {
