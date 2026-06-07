@@ -117,9 +117,30 @@ export default function DashboardDesktop() {
                 )}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-[13px] text-[var(--fg-2)]">
-                    {match.competition || "Match"}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[13px] text-[var(--fg-2)]">
+                      {match.competition || "Match"}
+                    </span>
+                    {match.state !== "live" && match.state !== "done" && (
+                      <span className="text-[11px] text-[var(--fg-3)]">
+                        {(() => {
+                          const kickoffDate = new Date(match.kickoff)
+                          const today = new Date()
+                          const tomorrow = new Date(today)
+                          tomorrow.setDate(tomorrow.getDate() + 1)
+                          const isToday = kickoffDate.toDateString() === today.toDateString()
+                          const isTomorrow = kickoffDate.toDateString() === tomorrow.toDateString()
+                          const dateLabel = isToday
+                            ? "Aujourd'hui"
+                            : isTomorrow
+                            ? "Demain"
+                            : kickoffDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" })
+                          const timeLabel = kickoffDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })
+                          return `${dateLabel} à ${timeLabel}`
+                        })()}
+                      </span>
+                    )}
+                  </div>
                   {match.state === "live" && (
                     <span className="text-[11px] font-semibold bg-[var(--error)] text-white px-2 py-1 rounded-full flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
