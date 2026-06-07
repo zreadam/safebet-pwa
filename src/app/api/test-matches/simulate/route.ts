@@ -63,21 +63,46 @@ export async function POST(req: Request) {
 
     // Calculate winnings and settle bets
     if (bets && bets.length > 0) {
+      // Get all matches to check combo bet results
+      const { data: allMatches } = await supabase
+        .from("matches")
+        .select("id, home_score, away_score")
+
+      const matchResults: Record<string, string> = {}
+      if (allMatches) {
+        for (const m of allMatches) {
+          const res = m.home_score! > m.away_score! ? "1" : m.home_score! < m.away_score! ? "2" : "N"
+          matchResults[m.id] = res
+        }
+      }
+
+      // Track balance updates per user
+      const balanceUpdates: Record<string, number> = {}
+
       for (const bet of bets) {
         let isWon = false
 
-        // Check if bet is winning
-        if (bet.selection === result) {
-          isWon = true
+        if (bet.bet_group_id) {
+          // COMBO BET: Check if ALL bets in group are winning
+          const { data: groupBets } = await supabase
+            .from("bets")
+            .select("id, match_id, selection")
+            .eq("bet_group_id", bet.bet_group_id)
+
+          isWon = (groupBets ?? []).every(gb => {
+            const matchResult = matchResults[gb.match_id] || "N"
+            return gb.selection === matchResult
+          })
+
+          console.log(`[Combo Bet ${bet.id}] Group: All selections matched = ${isWon}`)
+        } else {
+          // SIMPLE BET: Check if selection matches result
+          isWon = bet.selection === result
+          console.log(`[Simple Bet ${bet.id}] Selection: ${bet.selection}, Result: ${result}, Won: ${isWon}`)
         }
 
-        // Calculate amount to credit/debit
-        let amountToCredit = 0
-        if (isWon) {
-          amountToCredit = bet.stake * bet.odds
-        } else {
-          amountToCredit = 0 // Already deducted when bet was placed
-        }
+        // Calculate amount
+        let amountToCredit = isWon ? bet.potential_gain : 0
 
         // Update bet status
         await supabase
@@ -88,16 +113,23 @@ export async function POST(req: Request) {
           })
           .eq("id", bet.id)
 
-        // Credit balance if won
-        if (isWon && bet.user_id) {
-          const currentBalance = bet.profiles?.balance ?? 0
-          const newBalance = currentBalance + amountToCredit
-
-          await supabase
-            .from("profiles")
-            .update({ balance: newBalance })
-            .eq("id", bet.user_id)
+        // Track balance update
+        if (bet.user_id) {
+          if (!balanceUpdates[bet.user_id]) {
+            balanceUpdates[bet.user_id] = bet.profiles?.balance ?? 0
+          }
+          if (isWon) {
+            balanceUpdates[bet.user_id] += amountToCredit
+          }
         }
+      }
+
+      // Apply all balance updates
+      for (const [userId, newBalance] of Object.entries(balanceUpdates)) {
+        await supabase
+          .from("profiles")
+          .update({ balance: Math.max(0, newBalance) })
+          .eq("id", userId)
       }
     }
 

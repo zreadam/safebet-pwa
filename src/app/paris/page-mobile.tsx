@@ -245,9 +245,36 @@ export default function ParisPage() {
     ? Math.round((wonBets.length / settledBets.length) * 100)
     : 0
 
+  // Group bets by bet_group_id (for combo bets)
+  const groupedBets: (Bet | { id: string; bets: Bet[]; isCombo: true })[] = []
+  const processedIds = new Set<string>()
+
+  for (const bet of realBets) {
+    if (processedIds.has(bet.id)) continue
+
+    if (bet.bet_group_id) {
+      const groupBets = realBets.filter(b => b.bet_group_id === bet.bet_group_id)
+      groupedBets.push({
+        id: bet.bet_group_id,
+        bets: groupBets,
+        isCombo: true,
+      })
+      groupBets.forEach(b => processedIds.add(b.id))
+    } else {
+      groupedBets.push(bet)
+      processedIds.add(bet.id)
+    }
+  }
+
   const filtered = filter === "all"
-    ? realBets
-    : realBets.filter(b => b.status === filter)
+    ? groupedBets
+    : groupedBets.filter(item => {
+      if ('isCombo' in item && item.isCombo) {
+        return item.bets.some(b => b.status === filter)
+      } else {
+        return (item as Bet).status === filter
+      }
+    })
 
   return (
     <AppShell>
@@ -330,7 +357,56 @@ export default function ParisPage() {
                     )}
                   </div>
                 )
-                : filtered.map(b => <BetCard key={b.id} bet={b} />)
+                : filtered.map(item => {
+                  if ('isCombo' in item && item.isCombo) {
+                    // Combo bet
+                    const allWon = item.bets.every(b => b.status === "won")
+                    const allLost = item.bets.every(b => b.status === "lost")
+                    const isPending = item.bets.some(b => b.status === "pending")
+                    const status = allWon ? "won" : allLost ? "lost" : isPending ? "pending" : "unknown"
+                    const totalOdds = item.bets.reduce((acc, b) => acc * b.odds, 1)
+
+                    return (
+                      <div key={item.id} className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-[var(--radius-card)] [box-shadow:var(--shadow-card)] overflow-hidden">
+                        {/* Header combo */}
+                        <div className="bg-[var(--bg-2)] px-4 py-3 border-b border-[var(--border-light)]">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[13px] font-bold text-[var(--emerald-500)]">🎯 PARI COMBINÉ ({item.bets.length})</span>
+                            <span className={cn(
+                              "text-[11px] font-semibold px-2 py-1 rounded-full",
+                              statusColor(status as any)
+                            )}>
+                              {status === "won" ? "✓ Gagné" : status === "lost" ? "✗ Perdu" : "En cours"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-[var(--fg-3)]">
+                            <span>Cote totale: {totalOdds.toFixed(2)}</span>
+                            <span>Mise: {item.bets[0]?.stake} B</span>
+                          </div>
+                        </div>
+
+                        {/* Bets inside */}
+                        <div className="divide-y divide-[var(--border-light)]">
+                          {item.bets.map((bet, idx) => (
+                            <div key={bet.id} className="p-3 text-sm">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs text-[var(--fg-3)]">#{idx + 1}</span>
+                                <span className="font-semibold text-[var(--fg-1)] flex-1">{bet.match_label}</span>
+                                <span className={cn("text-xs font-bold", statusColor(bet.status as any))}>{bet.selection}</span>
+                              </div>
+                              <div className="flex justify-between text-xs text-[var(--fg-3)]">
+                                <span>{bet.market}</span>
+                                <span>Cote: {bet.odds.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  } else {
+                    return <BetCard key={(item as Bet).id} bet={item as Bet} />
+                  }
+                })
             }
           </div>
 
