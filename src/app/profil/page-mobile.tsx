@@ -11,6 +11,7 @@ import { useProfile } from "@/hooks/useProfile"
 import { useAuth } from "@/hooks/useAuth"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { getFlagPath, getCountryName } from "@/lib/flags"
 import { toast } from "sonner"
 import type { Area } from "react-easy-crop"
 
@@ -362,6 +363,14 @@ export default function ProfilPage() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
+                    {profile?.country && (
+                      <img
+                        src={getFlagPath(profile.country)}
+                        alt={getCountryName(profile.country)}
+                        title={getCountryName(profile.country)}
+                        className="w-6 h-6 rounded-sm object-cover"
+                      />
+                    )}
                     <p className="text-[20px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
                       {profile?.username ?? "Utilisateur"}
                     </p>

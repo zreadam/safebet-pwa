@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useProfile } from "@/hooks/useProfile"
 import { createClient } from "@/lib/supabase/client"
 import { BluffBadge } from "@/components/ui/bluff-badge"
+import { getFlagPath, getCountryName } from "@/lib/flags"
 
 export default function ProfilDesktop() {
   const { user, signOut } = useAuth()
@@ -34,10 +35,20 @@ export default function ProfilDesktop() {
         <div className="w-24 h-24 rounded-full bg-[var(--emerald-500)] flex items-center justify-center text-white font-bold [font-family:var(--font-display)] text-[40px] mx-auto mb-4">
           {profile?.username?.[0]?.toUpperCase() ?? "?"}
         </div>
-        <h2 className="text-[24px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
-          {profile?.username || "Utilisateur"}
-        </h2>
-        <p className="text-[14px] text-[var(--fg-3)] mt-2">{user?.email}</p>
+        <div className="flex items-center justify-center gap-3 mb-2">
+          {profile?.country && (
+            <img
+              src={getFlagPath(profile.country)}
+              alt={getCountryName(profile.country)}
+              title={getCountryName(profile.country)}
+              className="w-8 h-8 rounded-sm object-cover"
+            />
+          )}
+          <h2 className="text-[24px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
+            {profile?.username || "Utilisateur"}
+          </h2>
+        </div>
+        <p className="text-[14px] text-[var(--fg-3)]">{user?.email}</p>
         <div className="flex justify-center gap-4 mt-6">
           <div className="text-center">
             <p className="text-[13px] text-[var(--fg-3)] uppercase tracking-wide">Solde</p>
