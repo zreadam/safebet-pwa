@@ -13,10 +13,10 @@ export async function GET() {
     ],
     cronJobs: [
       {
-        name: "Live Events Notifications",
+        name: "Finished Match Notifications",
         url: `${baseUrl}/api/cron/live-events?secret=${cronSecret}`,
-        frequency: "Toutes les 5 minutes (*/5 * * * *)",
-        description: "Envoie des notifications pour les buts, cartons, remplacements, match terminé (uniquement pour les 28 ligues autorisées)",
+        frequency: "Toutes les heures (0 * * * *)",
+        description: "Envoie une notification quand un match se termine avec le résultat final",
       },
       {
         name: "Bet Settlement Notifications",

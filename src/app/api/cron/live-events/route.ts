@@ -140,15 +140,11 @@ export async function GET(req: Request) {
   const now = new Date()
   const stats = { notifs_sent: 0, errors: [] as string[] }
 
-  // ── 1. Fetch live fixtures ───────────────────────────────────────
-  let liveFixtures: Fixture[] = []
-  try {
-    const liveData = await fetchFootball("/fixtures?live=all") as { response: Fixture[] }
-    liveFixtures = (liveData.response ?? []).slice(0, 5)
-  } catch (err) {
-    stats.errors.push(`live-fetch: ${err}`)
-    return NextResponse.json({ ok: false, stats })
-  }
+  // ── 1. REMOVED: Live fixture events (buts, cartons, etc.) are no longer sent
+  // We now only send notifications for:
+  // - 15 minutes before match starts
+  // - When match ends (with final result)
+  // - Bet settlement notifications (from settle-bets cron)
 
   // ── 2. Check for fixtures starting in ~15 minutes ────────────────
   try {
@@ -193,122 +189,42 @@ export async function GET(req: Request) {
     stats.errors.push(`soon-check: ${err}`)
   }
 
-  // ── 3. Process live fixture events ──────────────────────────────
-  for (const fixture of liveFixtures) {
-    const fixtureId = fixture.fixture.id
-    const leagueId = fixture.league.id
-    const comp = LEAGUE_TO_COMP[leagueId]
+  // ── 3. Check for finished matches ────────────────────────────────
+  // We now only send notifications when matches end (not during the match)
+  try {
+    const { data: matches } = await admin
+      .from("matches")
+      .select("id, home_team, away_team, home_score, away_score, state")
+      .eq("state", "done")
+      .is("notif_sent", null) // Only for matches we haven't notified yet
 
-    // Skip if not in authorized competitions
-    if (!comp || !ALLOWED_COMPETITIONS.has(comp)) {
-      console.log(`[live-events] Skipping fixture ${fixtureId} - league ${leagueId} not authorized`)
-      continue
-    }
+    if (matches && matches.length > 0) {
+      for (const match of matches) {
+        const ftKey = `ft_${match.id}`
+        try {
+          const { data: existing } = await admin
+            .from("live_events_sent")
+            .select("key")
+            .eq("key", ftKey)
+            .maybeSingle()
 
-    const homeTeam = fixture.teams.home.name
-    const awayTeam = fixture.teams.away.name
-    const score = `${fixture.goals.home ?? 0}-${fixture.goals.away ?? 0}`
-
-    // Check FT notification
-    const statusShort = fixture.fixture.status.short
-    if (DONE_STATUSES.includes(statusShort)) {
-      const ftKey = `ft_${fixtureId}`
-      try {
-        const { data: existing } = await admin
-          .from("live_events_sent")
-          .select("key")
-          .eq("key", ftKey)
-          .maybeSingle()
-
-        if (!existing) {
-          await sendPushToAll({
-            title: `🏁 Match terminé`,
-            body: `${homeTeam} ${fixture.goals.home ?? 0} – ${fixture.goals.away ?? 0} ${awayTeam}`,
-            icon: "/logo.png",
-            data: { matchId: String(fixtureId) },
-          })
-          stats.notifs_sent++
-          await admin.from("live_events_sent").insert({ key: ftKey, created_at: now.toISOString() })
-        }
-      } catch (err) {
-        stats.errors.push(`ft-${fixtureId}: ${err}`)
-      }
-      continue
-    }
-
-    if (!LIVE_STATUSES.includes(statusShort)) continue
-
-    // Fetch events for this fixture
-    let events: FixtureEvent[] = []
-    try {
-      const eventsData = await fetchFootball(`/fixtures/events?fixture=${fixtureId}`) as { response: FixtureEvent[] }
-      events = eventsData.response ?? []
-    } catch (err) {
-      stats.errors.push(`events-${fixtureId}: ${err}`)
-      continue
-    }
-
-    for (const event of events) {
-      const eventType = event.type
-      const minute = event.time.elapsed
-      const team = event.team.name
-      const player = event.player.name
-      const assist = event.assist?.name ?? null
-
-      const key = `event_${fixtureId}_${minute}_${eventType}_${team}`
-
-      try {
-        const { data: existing } = await admin
-          .from("live_events_sent")
-          .select("key")
-          .eq("key", key)
-          .maybeSingle()
-
-        if (existing) continue
-
-        const msg = buildEventMessage(eventType, player, team, minute, assist, score)
-        if (!msg) continue
-
-        await sendPushToAll({
-          ...msg,
-          icon: "/logo.png",
-          data: {
-            matchId: String(fixtureId),
-            matchUrl: `/match/${fixtureId}`,
-          },
-        })
-        stats.notifs_sent++
-        await admin.from("live_events_sent").insert({ key, created_at: now.toISOString() })
-      } catch (err) {
-        stats.errors.push(`event-${key}: ${err}`)
-      }
-    }
-
-    // Check lineups available (fixture is live but check if lineup key was sent)
-    const lineupKey = `lineup_${fixtureId}`
-    try {
-      const { data: lineupSent } = await admin
-        .from("live_events_sent")
-        .select("key")
-        .eq("key", lineupKey)
-        .maybeSingle()
-
-      if (!lineupSent) {
-        const lineupsData = await fetchFootball(`/fixtures/lineups?fixture=${fixtureId}`) as { response: unknown[] }
-        if ((lineupsData.response ?? []).length > 0) {
-          await sendPushToAll({
-            title: `📋 Compositions disponibles`,
-            body: `${homeTeam} – ${awayTeam} : les compositions sont publiées`,
-            icon: "/logo.png",
-            data: { matchId: String(fixtureId), matchUrl: `/match/${fixtureId}` },
-          })
-          stats.notifs_sent++
-          await admin.from("live_events_sent").insert({ key: lineupKey, created_at: now.toISOString() })
+          if (!existing) {
+            await sendPushToAll({
+              title: `🏁 Match terminé`,
+              body: `${match.home_team} ${match.home_score ?? 0} – ${match.away_score ?? 0} ${match.away_team}`,
+              icon: "/logo.png",
+              data: { matchId: String(match.id) },
+            })
+            stats.notifs_sent++
+            await admin.from("live_events_sent").insert({ key: ftKey, created_at: now.toISOString() })
+          }
+        } catch (err) {
+          stats.errors.push(`ft-${match.id}: ${err}`)
         }
       }
-    } catch (err) {
-      stats.errors.push(`lineup-${fixtureId}: ${err}`)
     }
+  } catch (err) {
+    stats.errors.push(`finished-matches: ${err}`)
   }
 
   // ── 4. Cleanup old live_events_sent (> 24h) ─────────────────────
