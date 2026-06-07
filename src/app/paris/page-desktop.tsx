@@ -3,230 +3,272 @@
 export const dynamic = "force-dynamic"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import { useProfile } from "@/hooks/useProfile"
 import { cn } from "@/lib/utils"
-import type { Match } from "@/types"
+import type { Bet, BetStatus } from "@/types"
+
+type Filter = "all" | "pending" | "won" | "lost"
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "Tous" },
+  { key: "pending", label: "En cours" },
+  { key: "won", label: "Gagnés" },
+  { key: "lost", label: "Perdus" },
+]
+
+function statusColor(s: BetStatus): string {
+  if (s === "won") return "bg-[var(--emerald-500)]"
+  if (s === "lost") return "bg-[var(--error)]"
+  if (s === "pending") return "bg-[var(--info,#3B82F6)]"
+  return "bg-[var(--fg-3)]"
+}
+
+function statusBadge(s: BetStatus) {
+  const configs: Record<BetStatus, { label: string; classes: string }> = {
+    won: { label: "Gagné", classes: "bg-[var(--emerald-50)] text-[var(--emerald-900)]" },
+    lost: { label: "Perdu", classes: "bg-[#FEF2F2] text-[#991B1B]" },
+    pending: { label: "En cours", classes: "bg-[#EFF6FF] text-[#1E3A5F]" },
+    void: { label: "Annulé", classes: "bg-[var(--bg-3)] text-[var(--fg-3)]" },
+  }
+  const c = configs[s]
+  return (
+    <span className={cn("text-[11px] font-semibold px-2 py-[3px] rounded-full", c.classes)}>
+      {c.label}
+    </span>
+  )
+}
+
+function BetCard({ bet }: { bet: Bet }) {
+  const gain = bet.status === "won"
+    ? bet.potential_gain - bet.stake
+    : bet.status === "lost"
+    ? -bet.stake
+    : null
+
+  return (
+    <div className={cn(
+      "bg-[var(--bg-1)] border border-[var(--border-light)] rounded-lg p-4 animate-card-in"
+    )}>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <p className="text-[14px] font-semibold text-[var(--fg-1)]">{bet.match_label}</p>
+          <p className="text-[12px] text-[var(--fg-3)] mt-1">{bet.market} · {bet.selection}</p>
+        </div>
+        {statusBadge(bet.status)}
+      </div>
+
+      <div className="grid grid-cols-4 gap-3">
+        <div>
+          <span className="text-[10px] text-[var(--fg-3)]">Cote</span>
+          <span className="text-[14px] font-bold text-[var(--fg-1)] block">
+            {bet.odds.toFixed(2)}
+          </span>
+        </div>
+        <div>
+          <span className="text-[10px] text-[var(--fg-3)]">Mise</span>
+          <span className="text-[14px] font-bold text-[var(--fg-1)] block">
+            {bet.stake} B
+          </span>
+        </div>
+        <div>
+          <span className="text-[10px] text-[var(--fg-3)]">
+            {bet.status === "won" ? "Gain" : bet.status === "lost" ? "Perte" : "Pot."}
+          </span>
+          <span className={cn(
+            "text-[14px] font-bold block",
+            bet.status === "won" ? "text-[var(--emerald-500)]" :
+            bet.status === "lost" ? "text-[var(--error)]" :
+            "text-[var(--fg-2)]"
+          )}>
+            {bet.status === "won" && gain !== null && `+${gain.toFixed(2)} B`}
+            {bet.status === "lost" && gain !== null && `${gain.toFixed(2)} B`}
+            {bet.status === "pending" && `${bet.potential_gain.toFixed(2)} B`}
+            {bet.status === "void" && "–"}
+          </span>
+        </div>
+        <div>
+          <span className="text-[10px] text-[var(--fg-3)]">Date</span>
+          <span className="text-[11px] font-semibold text-[var(--fg-1)] block">
+            {new Date(bet.placed_at).toLocaleDateString("fr-FR", {
+              day: "numeric", month: "short"
+            })}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ParisDesktop() {
   const { profile } = useProfile()
-  const [matches, setMatches] = useState<Match[]>([])
+  const [bets, setBets] = useState<Bet[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState<string>("")
+  const [filter, setFilter] = useState<Filter>("all")
 
   useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const res = await fetch("/api/matches")
-        if (res.ok) {
-          const data = await res.json()
-          setMatches(data.matches || data)
-          
-          // Set default date to today
-          const today = new Date().toISOString().split("T")[0]
-          setSelectedDate(today)
-        }
-      } catch (error) {
-        console.error("Erreur lors du chargement des matchs:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchMatches()
+    fetch("/api/bets")
+      .then(r => r.json())
+      .then(data => { setBets(data ?? []); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
 
-  // Filter matches by selected date
-  const filteredMatches = matches.filter(m => {
-    const matchDate = new Date(m.kickoff).toISOString().split("T")[0]
-    return matchDate === selectedDate
-  })
+  const realBets = bets.filter(b => b.stake > 0)
+  const wonBets = realBets.filter(b => b.status === "won")
+  const lostBets = realBets.filter(b => b.status === "lost")
+  const totalGain = wonBets.reduce((s, b) => s + b.potential_gain - b.stake, 0)
+  const settledBets = realBets.filter(b => b.status !== "pending" && b.status !== "void")
+  const successRate = settledBets.length > 0
+    ? Math.round((wonBets.length / settledBets.length) * 100)
+    : 0
 
-  // Get unique dates from matches
-  const uniqueDates = Array.from(
-    new Set(matches.map(m => new Date(m.kickoff).toISOString().split("T")[0]))
-  ).sort()
+  // Group bets by bet_group_id (for combo bets)
+  const groupedBets: (Bet | { id: string; bets: Bet[]; isCombo: true })[] = []
+  const processedIds = new Set<string>()
 
-  const getCompetitionColor = (match: Match) => {
-    const colors: Record<string, string> = {
-      L1: "#1C2951",
-      PL: "#3d195b",
-      LIGA: "#e01a22",
-      BL: "#e01a22",
-      SA: "#0067b1",
-      UCL: "#0a1a5e",
-      CDM: "#C9A227",
-      AMICAL: "#8B5CF6",
+  for (const bet of realBets) {
+    if (processedIds.has(bet.id)) continue
+
+    if (bet.bet_group_id) {
+      const groupBets = realBets.filter(b => b.bet_group_id === bet.bet_group_id)
+      groupedBets.push({
+        id: bet.bet_group_id,
+        bets: groupBets,
+        isCombo: true,
+      })
+      groupBets.forEach(b => processedIds.add(b.id))
+    } else {
+      groupedBets.push(bet)
+      processedIds.add(bet.id)
     }
-    return colors[match.competition] || "#6B7280"
   }
+
+  const filtered = filter === "all"
+    ? groupedBets
+    : groupedBets.filter(item => {
+      if ('isCombo' in item && item.isCombo) {
+        return item.bets.some(b => b.status === filter)
+      } else {
+        return (item as Bet).status === filter
+      }
+    })
 
   return (
     <div className="w-full">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-[30px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
-          Matchs Disponibles
+      <div className="mb-8">
+        <h1 className="text-[30px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)] mb-1">
+          Mes paris
         </h1>
-        <p className="text-[var(--fg-2)] mt-1">Sélectionne un match et place ton pari</p>
+        <p className="text-[var(--fg-2)]">Historique et statistiques de tes paris</p>
       </div>
 
-      {/* Date Selector */}
-      {!loading && uniqueDates.length > 0 && (
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-          {uniqueDates.map((date) => (
-            <button
-              key={date}
-              onClick={() => setSelectedDate(date)}
-              className={cn(
-                "px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-all",
-                selectedDate === date
-                  ? "bg-[var(--emerald-500)] text-white"
-                  : "bg-[var(--bg-1)] border border-[var(--border-light)] text-[var(--fg-2)] hover:bg-[var(--bg-2)]"
-              )}
-            >
-              {new Date(date + "T00:00:00").toLocaleDateString("fr-FR", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </button>
-          ))}
+      {/* Metrics */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-lg p-4">
+          <p className="text-[11px] text-[var(--fg-3)] mb-1">Solde</p>
+          <p className="text-[22px] font-bold [font-family:var(--font-display)] text-[var(--emerald-600)]">
+            {profile ? `${profile.balance.toFixed(2)} B` : "–"}
+          </p>
         </div>
-      )}
+        <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-lg p-4">
+          <p className="text-[11px] text-[var(--fg-3)] mb-1">Gain total</p>
+          <p className={cn(
+            "text-[22px] font-bold [font-family:var(--font-display)]",
+            totalGain >= 0 ? "text-[var(--emerald-500)]" : "text-[var(--error)]"
+          )}>
+            {totalGain >= 0 ? "+" : ""}{totalGain.toFixed(2)} B
+          </p>
+        </div>
+        <div className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-lg p-4">
+          <p className="text-[11px] text-[var(--fg-3)] mb-1">Réussite</p>
+          <p className="text-[22px] font-bold [font-family:var(--font-display)] text-[var(--emerald-500)]">
+            {successRate}%
+          </p>
+        </div>
+      </div>
 
-      {/* Matches Grid */}
-      {loading ? (
-        <div className="text-center py-12">
-          <p className="text-[var(--fg-3)]">Chargement des matchs...</p>
-        </div>
-      ) : matches.length === 0 ? (
-        <div className="text-center py-12 bg-[var(--bg-2)] rounded-[12px] border border-[var(--border-light)]">
-          <div className="text-4xl mb-3">⚽</div>
-          <p className="text-[var(--fg-1)] font-semibold mb-1">Aucun match disponible</p>
-          <p className="text-[var(--fg-3)] text-sm">Les matchs seront bientôt disponibles. Reviens plus tard!</p>
-        </div>
-      ) : filteredMatches.length === 0 ? (
-        <div className="text-center py-12 bg-[var(--bg-2)] rounded-[12px] border border-[var(--border-light)]">
-          <div className="text-4xl mb-3">📅</div>
-          <p className="text-[var(--fg-1)] font-semibold mb-1">Aucun match ce jour</p>
-          <p className="text-[var(--fg-3)] text-sm">Sélectionne une autre date ou reviens demain</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredMatches.map((match) => {
-            const cc = getCompetitionColor(match)
-            const live = match.state === "live"
-            const done = match.state === "done"
+      {/* Filters */}
+      <div className="flex gap-2 mb-6">
+        {FILTERS.map(f => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={cn(
+              "px-4 py-2 rounded-lg text-[13px] font-semibold transition-all",
+              "border",
+              filter === f.key
+                ? "bg-[var(--emerald-500)] border-[var(--emerald-500)] text-white"
+                : "bg-[var(--bg-1)] border-[var(--border-light)] text-[var(--fg-2)] hover:bg-[var(--bg-2)]"
+            )}>
+            {f.label}
+          </button>
+        ))}
+      </div>
 
-            return (
-              <Link
-                key={match.id}
-                href={`/match/${match.id}`}
-                className={cn(
-                  "rounded-[12px] border border-[var(--border-light)]",
-                  "bg-[var(--bg-1)] p-4 cursor-pointer transition-all duration-200",
-                  "hover:-translate-y-1 hover:shadow-[var(--shadow-hover)] active:scale-95",
-                  "animate-card-in",
-                  live && "border-t-2 border-t-[var(--emerald-500)]",
-                  "[box-shadow:var(--shadow-card)]"
-                )}
-              >
-                {/* Top row */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="flex items-center gap-[7px] text-xs font-semibold text-[var(--fg-2)]">
-                    <span
-                      className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center text-[9px] font-bold text-white"
-                      style={{ background: cc }}
-                    >
-                      {match.competition[0]}
-                    </span>
-                    {match.competition_name || match.competition}
-                  </span>
-                  {live && (
-                    <span className="flex items-center gap-[5px] text-[10px] font-semibold bg-[var(--error)] text-white px-2 py-1 rounded-full animate-pulse">
-                      <span className="w-[5px] h-[5px] rounded-full bg-white" />
-                      LIVE {match.minute}
-                    </span>
-                  )}
-                  {done && <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-[var(--emerald-50)] text-[var(--emerald-900)]">Terminé</span>}
-                  {!live && !done && (
-                    <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-[#EFF6FF] text-[#1E3A5F]">
-                      {new Date(match.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
-                    </span>
-                  )}
-                </div>
+      {/* Bets List */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-[var(--fg-3)]">Chargement des paris...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 bg-[var(--bg-2)] rounded-lg border border-[var(--border-light)]">
+            <div className="text-4xl mb-3">🎯</div>
+            <p className="text-[var(--fg-1)] font-semibold mb-1">Pas encore de paris</p>
+            <p className="text-[var(--fg-3)] text-sm">Lance-toi et place tes premiers paris !</p>
+          </div>
+        ) : (
+          filtered.map(item => {
+            if ('isCombo' in item && item.isCombo) {
+              // Combo bet
+              const allWon = item.bets.every(b => b.status === "won")
+              const allLost = item.bets.every(b => b.status === "lost")
+              const isPending = item.bets.some(b => b.status === "pending")
+              const status = allWon ? "won" : allLost ? "lost" : isPending ? "pending" : "unknown"
+              const totalOdds = item.bets.reduce((acc, b) => acc * b.odds, 1)
 
-                {/* Teams - Same as mobile design */}
-                <div className="flex items-center justify-between mb-[14px]">
-                  {/* Home Team */}
-                  <div className="flex flex-col items-center gap-2 flex-1">
-                    <div
-                      className="rounded-full flex items-center justify-center font-bold w-8 h-8 text-xs [font-family:var(--font-display)]"
-                      style={{
-                        background: `${cc}22`,
-                        color: cc,
-                      }}
-                    >
-                      {match.home_team_code?.slice(0, 3)}
+              return (
+                <div key={item.id} className="bg-[var(--bg-1)] border border-[var(--border-light)] rounded-lg overflow-hidden">
+                  {/* Header */}
+                  <div className="bg-[var(--bg-2)] px-4 py-3 border-b border-[var(--border-light)]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[13px] font-bold text-[var(--emerald-500)]">🎯 PARI COMBINÉ ({item.bets.length})</span>
+                      <span className={cn(
+                        "text-[11px] font-semibold px-2 py-1 rounded-full",
+                        statusColor(status as any)
+                      )}>
+                        {status === "won" ? "✓ Gagné" : status === "lost" ? "✗ Perdu" : "En cours"}
+                      </span>
                     </div>
-                    <span className="text-xs font-medium text-[var(--fg-2)] text-center">{match.home_team}</span>
+                    <div className="flex gap-6 text-xs text-[var(--fg-3)]">
+                      <span>Cote totale: <span className="font-bold text-[var(--fg-1)]">{totalOdds.toFixed(2)}</span></span>
+                      <span>Mise: <span className="font-bold text-[var(--fg-1)]">{item.bets[0]?.stake} B</span></span>
+                    </div>
                   </div>
 
-                  {/* Score */}
-                  <div className="text-center px-2">
-                    <div className="font-bold text-xl leading-none [font-family:var(--font-display)] text-[var(--fg-1)] whitespace-nowrap">
-                      {(live || done) && match.home_score !== null && match.away_score !== null
-                        ? `${match.home_score} – ${match.away_score}`
-                        : "–"}
-                    </div>
-                    {live && <div className="text-xs text-[var(--fg-3)] mt-1">{match.minute}</div>}
-                    {!live && !done && (
-                      <div className="text-xs text-[var(--fg-3)] mt-1">
-                        {new Date(match.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
+                  {/* Bets */}
+                  <div className="divide-y divide-[var(--border-light)] p-4 space-y-3">
+                    {item.bets.map((bet, idx) => (
+                      <div key={bet.id} className={idx > 0 ? "pt-3" : ""}>
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-[11px] font-bold bg-[var(--bg-2)] px-2 py-1 rounded text-[var(--fg-3)]">#{idx + 1}</span>
+                          <span className="font-semibold text-[var(--fg-1)] flex-1">{bet.match_label}</span>
+                          <span className={cn("text-[11px] font-bold px-2 py-1 rounded", statusColor(bet.status as any))}>{bet.selection}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-[var(--fg-3)]">
+                          <span>{bet.market}</span>
+                          <span>Cote: {bet.odds.toFixed(2)}</span>
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Away Team */}
-                  <div className="flex flex-col items-center gap-2 flex-1">
-                    <div
-                      className="rounded-full flex items-center justify-center font-bold w-8 h-8 text-xs [font-family:var(--font-display)]"
-                      style={{
-                        background: `${cc}22`,
-                        color: cc,
-                      }}
-                    >
-                      {match.away_team_code?.slice(0, 3)}
-                    </div>
-                    <span className="text-xs font-medium text-[var(--fg-2)] text-center">{match.away_team}</span>
+                    ))}
                   </div>
                 </div>
-
-                {/* Odds - Bottom */}
-                <div className="flex gap-2">
-                  {(["1", "N", "2"] as const).map((key, i) => {
-                    const oddsVal = [match.odds_1, match.odds_n, match.odds_2][i]
-                    const hasOdds = oddsVal !== null && oddsVal !== undefined
-                    const oddsDisplay = hasOdds ? oddsVal.toFixed(2) : "–"
-
-                    return (
-                      <div
-                        key={key}
-                        className="flex-1 border rounded-lg py-2 text-center bg-[var(--bg-2)]"
-                        style={{ opacity: hasOdds ? 1 : 0.6 }}
-                      >
-                        <span className="block text-[10px] text-[var(--fg-3)] mb-1">{key}</span>
-                        <span className="block font-bold text-sm [font-family:var(--font-display)] text-[var(--fg-1)]">{oddsDisplay}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      )}
+              )
+            } else {
+              return <BetCard key={(item as Bet).id} bet={item as Bet} />
+            }
+          })
+        )}
+      </div>
     </div>
   )
 }
