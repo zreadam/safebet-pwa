@@ -58,6 +58,7 @@ export default function TestMatchesPage() {
   const [selectedMatch, setSelectedMatch] = useState<TestMatch | null>(null)
   const [homeScore, setHomeScore] = useState(0)
   const [awayScore, setAwayScore] = useState(0)
+  const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null)
   const [stats, setStats] = useState({
     homePossession: 50,
     homeShots: 10,
@@ -571,22 +572,43 @@ export default function TestMatchesPage() {
                     <button
                       onClick={async () => {
                         if (!confirm(`Supprimer le match ${m.home_team} vs ${m.away_team} ?`)) return
+
+                        setDeletingMatchId(m.id)
                         try {
                           const res = await fetch("/api/test-matches/delete", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ match_id: m.id }),
                           })
-                          if (!res.ok) throw new Error("Erreur")
+
+                          if (!res.ok) {
+                            const data = await res.json()
+                            throw new Error(data.error || "Erreur")
+                          }
+
+                          // Remove from list immediately
+                          setTestMatches(prev => prev.filter(match => match.id !== m.id))
+
+                          // Deselect if it was selected
+                          if (selectedMatch?.id === m.id) {
+                            setSelectedMatch(null)
+                          }
+
                           toast.success("Match supprimé ✓")
-                          await fetchTestMatches()
-                        } catch (err) {
-                          toast.error("Erreur lors de la suppression")
+                        } catch (err: any) {
+                          toast.error(err.message || "Erreur lors de la suppression")
+                          setDeletingMatchId(null)
                         }
                       }}
-                      className="px-3 py-2 rounded-lg bg-[var(--error)] text-white font-semibold text-xs hover:opacity-90 transition"
+                      disabled={deletingMatchId === m.id}
+                      className={cn(
+                        "px-3 py-2 rounded-lg font-semibold text-xs transition",
+                        deletingMatchId === m.id
+                          ? "bg-[var(--fg-3)] text-white opacity-60 cursor-not-allowed"
+                          : "bg-[var(--error)] text-white hover:opacity-90"
+                      )}
                     >
-                      🗑️ Supprimer
+                      {deletingMatchId === m.id ? "Suppression..." : "🗑️ Supprimer"}
                     </button>
                   </div>
                 </div>
