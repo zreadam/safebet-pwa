@@ -17,14 +17,69 @@ interface Bet {
   potential_gain: number
   status: "pending" | "won" | "lost"
   placed_at: string
+  bet_group_id?: string | null
+}
+
+interface BetGroup {
+  groupId: string | null
+  bets: Bet[]
+  combinedOdds: number
+  totalStake: number
+  totalPotentialGain: number
+  status: "pending" | "won" | "lost"
+  isCombo: boolean
+}
+
+function groupBets(bets: Bet[]): BetGroup[] {
+  const groups: Map<string, BetGroup> = new Map()
+  const uniqueIds = new Set<string>()
+
+  for (const bet of bets) {
+    // Skip duplicates
+    if (uniqueIds.has(bet.id)) continue
+    uniqueIds.add(bet.id)
+
+    const groupKey = bet.bet_group_id || `single-${bet.id}`
+    const isCombo = !!bet.bet_group_id
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, {
+        groupId: bet.bet_group_id || null,
+        bets: [],
+        combinedOdds: 1,
+        totalStake: 0,
+        totalPotentialGain: 0,
+        status: bet.status,
+        isCombo,
+      })
+    }
+
+    const group = groups.get(groupKey)!
+    group.bets.push(bet)
+    group.combinedOdds *= bet.odds
+    group.totalStake += bet.stake
+    group.totalPotentialGain += bet.potential_gain
+
+    // Update status (if any bet is won/lost, the combo is won/lost)
+    if (bet.status !== "pending") {
+      group.status = bet.status
+    }
+  }
+
+  return Array.from(groups.values()).sort((a, b) => {
+    const dateA = new Date(a.bets[0]?.placed_at || 0).getTime()
+    const dateB = new Date(b.bets[0]?.placed_at || 0).getTime()
+    return dateB - dateA
+  })
 }
 
 export default function BetsPageDesktop() {
   const { user } = useAuth()
   const [bets, setBets] = useState<Bet[]>([])
+  const [betGroups, setBetGroups] = useState<BetGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<"all" | "pending" | "won" | "lost">("all")
-  const [selectedBet, setSelectedBet] = useState<Bet | null>(null)
+  const [selectedGroup, setSelectedGroup] = useState<BetGroup | null>(null)
 
   useEffect(() => {
     const fetchBets = async () => {
@@ -34,7 +89,9 @@ export default function BetsPageDesktop() {
         const res = await fetch("/api/bets")
         if (res.ok) {
           const data = await res.json()
-          setBets(Array.isArray(data) ? data : data.bets || [])
+          const allBets = Array.isArray(data) ? data : data.bets || []
+          setBets(allBets)
+          setBetGroups(groupBets(allBets))
         }
       } catch (error) {
         console.error("Erreur lors du chargement des paris:", error)
@@ -46,16 +103,16 @@ export default function BetsPageDesktop() {
     fetchBets()
   }, [user])
 
-  const filteredBets = bets.filter(bet => {
+  const filteredGroups = betGroups.filter(group => {
     if (filter === "all") return true
-    return bet.status === filter
+    return group.status === filter
   })
 
   const stats = {
-    total: bets.length,
-    won: bets.filter(b => b.status === "won").length,
-    lost: bets.filter(b => b.status === "lost").length,
-    pending: bets.filter(b => b.status === "pending").length,
+    total: betGroups.length,
+    won: betGroups.filter(g => g.status === "won").length,
+    lost: betGroups.filter(g => g.status === "lost").length,
+    pending: betGroups.filter(g => g.status === "pending").length,
   }
 
   const getStatusColor = (status: string) => {
@@ -118,7 +175,7 @@ export default function BetsPageDesktop() {
             <div className="text-center py-12">
               <p className="text-[var(--fg-3)]">Chargement des paris...</p>
             </div>
-          ) : filteredBets.length === 0 ? (
+          ) : filteredGroups.length === 0 ? (
             <div className="text-center py-16 bg-[var(--bg-1)] rounded-[12px] border border-[var(--border-light)] [box-shadow:var(--shadow-card)]">
               <div className="text-5xl mb-4">🎯</div>
               <p className="text-[var(--fg-1)] font-semibold mb-2">Aucun pari {filter !== "all" ? `${filter}` : ""}</p>
@@ -126,43 +183,47 @@ export default function BetsPageDesktop() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredBets.map((bet) => (
+              {filteredGroups.map((group) => (
                 <button
-                  key={bet.id}
-                  onClick={() => setSelectedBet(bet)}
+                  key={group.groupId || group.bets[0].id}
+                  onClick={() => setSelectedGroup(group)}
                   className={cn(
                     "w-full p-4 rounded-[12px] border transition-all text-left",
-                    selectedBet?.id === bet.id
+                    selectedGroup?.groupId === group.groupId
                       ? "bg-[var(--emerald-50)] border-[var(--emerald-500)] [box-shadow:var(--shadow-hover)]"
                       : "bg-[var(--bg-1)] border-[var(--border-light)] [box-shadow:var(--shadow-card)] hover:shadow-[var(--shadow-hover)]"
                   )}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="font-semibold text-[var(--fg-1)] text-[14px] mb-1">
-                        {bet.match_label}
-                      </p>
-                      <p className="text-[12px] text-[var(--fg-3)]">
-                        {new Date(bet.placed_at).toLocaleDateString("fr-FR")}
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-[var(--fg-1)] text-[14px]">
+                          {group.isCombo ? `Pari Combiné (${group.bets.length})` : group.bets[0].match_label}
+                        </p>
+                      </div>
+                      <p className="text-[12px] text-[var(--fg-3)] mt-1">
+                        {new Date(group.bets[0].placed_at).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
-                    <div className={cn("px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap h-fit", getStatusColor(bet.status))}>
-                      {getStatusLabel(bet.status)}
+                    <div className={cn("px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap h-fit", getStatusColor(group.status))}>
+                      {getStatusLabel(group.status)}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="p-2 bg-[var(--bg-2)] rounded-lg text-center">
-                      <p className="text-[11px] text-[var(--fg-3)] mb-1">Sélection</p>
-                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{bet.selection}</p>
-                    </div>
-                    <div className="p-2 bg-[var(--bg-2)] rounded-lg text-center">
-                      <p className="text-[11px] text-[var(--fg-3)] mb-1">Cote</p>
-                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{bet.odds.toFixed(2)}</p>
+                      <p className="text-[11px] text-[var(--fg-3)] mb-1">{group.isCombo ? "Cotes" : "Sélection"}</p>
+                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">
+                        {group.isCombo ? group.combinedOdds.toFixed(2) : group.bets[0].selection}
+                      </p>
                     </div>
                     <div className="p-2 bg-[var(--bg-2)] rounded-lg text-center">
                       <p className="text-[11px] text-[var(--fg-3)] mb-1">Mise</p>
-                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{bet.stake} B</p>
+                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{group.totalStake} B</p>
+                    </div>
+                    <div className="p-2 bg-[var(--bg-2)] rounded-lg text-center">
+                      <p className="text-[11px] text-[var(--fg-3)] mb-1">Gain pot.</p>
+                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{group.totalPotentialGain.toFixed(2)} B</p>
                     </div>
                   </div>
                 </button>
@@ -173,18 +234,18 @@ export default function BetsPageDesktop() {
       </div>
 
       {/* Right side: Bet details (sticky) */}
-      {selectedBet ? (
+      {selectedGroup ? (
         <div className="w-[35%] sticky top-0 h-screen overflow-y-auto relative bg-gradient-to-b" style={{
-          backgroundImage: selectedBet.status === "won"
+          backgroundImage: selectedGroup.status === "won"
             ? "linear-gradient(to bottom, rgb(16, 185, 129), rgb(6, 78, 59))"
-            : selectedBet.status === "lost"
+            : selectedGroup.status === "lost"
             ? "linear-gradient(to bottom, rgb(220, 38, 38), rgb(127, 29, 29))"
             : "linear-gradient(to bottom, rgb(16, 140, 100), rgb(10, 61, 46))"
         }}>
           {/* Close button */}
           <div className="flex justify-end px-6 pt-4">
             <button
-              onClick={() => setSelectedBet(null)}
+              onClick={() => setSelectedGroup(null)}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(255,255,255,0.12)]"
             >
               <i className="ti ti-x text-white text-[18px]" />
@@ -193,14 +254,13 @@ export default function BetsPageDesktop() {
 
           {/* Content */}
           <div className="px-6 space-y-3">
-            {/* Match Info */}
+            {/* Header */}
             <div className="space-y-2">
               <div className="text-center">
-                <p className="text-white text-[12px] font-semibold">{selectedBet.match_label}</p>
-                <p className="text-white text-[11px] text-opacity-70 mt-1">{selectedBet.market}</p>
-                <p className="text-white text-[20px] font-bold [font-family:var(--font-display)] mt-2">
-                  {selectedBet.odds.toFixed(2)}
-                </p>
+                <p className="text-white text-[14px] font-bold">{selectedGroup.isCombo ? "Pari Combiné" : "Pari Simple"}</p>
+                {selectedGroup.isCombo && (
+                  <p className="text-white text-[11px] text-opacity-70 mt-1">{selectedGroup.bets.length} sélections</p>
+                )}
               </div>
             </div>
 
@@ -208,51 +268,76 @@ export default function BetsPageDesktop() {
             <div className="flex justify-center">
               <span className={cn(
                 "px-4 py-2 rounded-full text-white text-[12px] font-bold",
-                selectedBet.status === "won"
+                selectedGroup.status === "won"
                   ? "bg-[rgba(255,255,255,0.2)]"
-                  : selectedBet.status === "lost"
+                  : selectedGroup.status === "lost"
                   ? "bg-[rgba(0,0,0,0.2)]"
                   : "bg-[rgba(255,255,255,0.15)]"
               )}>
-                {getStatusLabel(selectedBet.status)}
+                {getStatusLabel(selectedGroup.status)}
               </span>
+            </div>
+
+            {/* Combined Odds */}
+            <div className="text-center">
+              <p className="text-white text-[11px] text-opacity-70 mb-1">Cote combinée</p>
+              <p className="text-white text-[28px] font-bold [font-family:var(--font-display)]">
+                {selectedGroup.combinedOdds.toFixed(2)}
+              </p>
             </div>
 
             {/* Details grid */}
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
-                <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Sélection</p>
-                <p className="text-[12px] font-semibold text-white">{selectedBet.selection}</p>
-              </div>
-              <div className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
-                <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Mise</p>
-                <p className="text-[12px] font-semibold text-white">{selectedBet.stake} B</p>
+                <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Mise totale</p>
+                <p className="text-[12px] font-semibold text-white">{selectedGroup.totalStake} B</p>
               </div>
               <div className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
                 <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Gain potentiel</p>
                 <p className="text-[12px] font-semibold text-white">
-                  {selectedBet.potential_gain.toFixed(2)} B
-                </p>
-              </div>
-              <div className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
-                <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Placé le</p>
-                <p className="text-[12px] font-semibold text-white">
-                  {new Date(selectedBet.placed_at).toLocaleDateString("fr-FR")}
+                  {selectedGroup.totalPotentialGain.toFixed(2)} B
                 </p>
               </div>
             </div>
 
+            {/* Selections list */}
+            {selectedGroup.isCombo && (
+              <div className="space-y-2">
+                <p className="text-[10px] text-[rgba(255,255,255,0.7)]">SÉLECTIONS</p>
+                {selectedGroup.bets.map((bet, idx) => (
+                  <div key={bet.id} className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
+                    <p className="text-[9px] text-[rgba(255,255,255,0.6)] mb-1">Match {idx + 1}</p>
+                    <p className="text-[11px] font-semibold text-white mb-1">{bet.match_label}</p>
+                    <div className="grid grid-cols-3 gap-1 text-[9px]">
+                      <div>
+                        <p className="text-[rgba(255,255,255,0.6)]">Sélection</p>
+                        <p className="text-white font-semibold">{bet.selection}</p>
+                      </div>
+                      <div>
+                        <p className="text-[rgba(255,255,255,0.6)]">Cote</p>
+                        <p className="text-white font-semibold">{bet.odds.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[rgba(255,255,255,0.6)]">Marché</p>
+                        <p className="text-white font-semibold">{bet.market}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Reward display */}
-            {selectedBet.status !== "pending" && (
+            {selectedGroup.status !== "pending" && (
               <div className="bg-[rgba(255,255,255,0.1)] rounded-[8px] p-3 border border-[rgba(255,255,255,0.2)]">
                 <p className="text-[11px] text-[rgba(255,255,255,0.8)] mb-2 text-center">Résultat final</p>
-                {selectedBet.status === "won" ? (
+                {selectedGroup.status === "won" ? (
                   <p className="text-[24px] font-bold [font-family:var(--font-display)] text-white text-center">
-                    +{(selectedBet.potential_gain - selectedBet.stake).toFixed(2)} B
+                    +{(selectedGroup.totalPotentialGain - selectedGroup.totalStake).toFixed(2)} B
                   </p>
                 ) : (
                   <p className="text-[24px] font-bold [font-family:var(--font-display)] text-white text-center">
-                    -{selectedBet.stake} B
+                    -{selectedGroup.totalStake} B
                   </p>
                 )}
               </div>

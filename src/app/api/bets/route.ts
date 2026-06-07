@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     // Place all bets (simple or combo)
-    const betGroupId = `${user.id}-${Date.now()}`
+    const betGroupId = type === "combo" ? `${user.id}-${Date.now()}` : null
     const betsToInsert = selections.map((sel: any) => ({
       user_id: user.id,
       match_id: sel.matchId,
@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       status: "pending",
       is_live: false,
       placed_at: new Date().toISOString(),
+      bet_group_id: betGroupId,
     }))
 
     const { data: insertedBets, error: insertError } = await supabase

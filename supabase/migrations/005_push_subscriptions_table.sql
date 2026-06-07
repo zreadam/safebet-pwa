@@ -19,18 +19,21 @@ CREATE INDEX IF NOT EXISTS idx_push_subscriptions_created_at
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- RLS policy: users can only access their own subscriptions
+DROP POLICY IF EXISTS "Users can view their own push subscriptions" ON public.push_subscriptions;
 CREATE POLICY "Users can view their own push subscriptions"
   ON public.push_subscriptions
   FOR SELECT
   USING (auth.uid() = user_id);
 
 -- RLS policy: users can insert their own subscriptions
+DROP POLICY IF EXISTS "Users can insert their own push subscriptions" ON public.push_subscriptions;
 CREATE POLICY "Users can insert their own push subscriptions"
   ON public.push_subscriptions
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- RLS policy: users can delete their own subscriptions
+DROP POLICY IF EXISTS "Users can delete their own push subscriptions" ON public.push_subscriptions;
 CREATE POLICY "Users can delete their own push subscriptions"
   ON public.push_subscriptions
   FOR DELETE

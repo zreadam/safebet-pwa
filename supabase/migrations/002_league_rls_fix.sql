@@ -35,5 +35,6 @@ create policy "Public leagues view" on leagues for select
 
 -- matches : allow upsert from service role (already handled but adding for clarity)
 drop policy if exists "Upsert matches" on matches;
+drop policy if exists "Update matches" on matches;
 create policy "Upsert matches" on matches for insert with check (true);
 create policy "Update matches" on matches for update using (true);

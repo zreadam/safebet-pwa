@@ -18,10 +18,12 @@ ON ad_claims(user_id, created_at DESC);
 -- Politique RLS : les utilisateurs ne voient que leurs propres claims
 ALTER TABLE ad_claims ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "users_view_own_ad_claims" ON ad_claims;
 CREATE POLICY "users_view_own_ad_claims"
 ON ad_claims FOR SELECT
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "users_insert_own_ad_claims" ON ad_claims;
 CREATE POLICY "users_insert_own_ad_claims"
 ON ad_claims FOR INSERT
 WITH CHECK (auth.uid() = user_id);
