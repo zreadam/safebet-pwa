@@ -1167,7 +1167,7 @@ export default function MatchDetailPage() {
 
       {/* ── Match header — AGRANDIS AVEC FOND DYNAMIQUE ET OVERLAY ── */}
       <div
-        className="w-full md:w-[35%] md:sticky md:top-0 md:h-screen overflow-y-auto relative px-4 md:px-5 pt-3 md:pt-6 pb-6 bg-cover bg-center h-[75vh]"
+        className="w-full h-[45vh] md:w-[35%] md:h-screen md:sticky md:top-0 overflow-y-auto relative px-4 md:px-5 pt-3 md:pt-6 pb-6 bg-cover bg-center"
         style={{ backgroundImage: getCompetitionBackground() }}
       >
         {/* Overlay sombre pour améliorer la lisibilité */}
