@@ -58,6 +58,20 @@ export default function TestMatchesPage() {
   const [selectedMatch, setSelectedMatch] = useState<TestMatch | null>(null)
   const [homeScore, setHomeScore] = useState(0)
   const [awayScore, setAwayScore] = useState(0)
+  const [stats, setStats] = useState({
+    homePossession: 50,
+    homeShots: 10,
+    homeShotsOnTarget: 5,
+    homeCorners: 5,
+    homeYellowCards: 2,
+    homeRedCards: 0,
+    awayPossession: 50,
+    awayShots: 10,
+    awayShotsOnTarget: 5,
+    awayCorners: 5,
+    awayYellowCards: 2,
+    awayRedCards: 0,
+  })
 
   const [creating, setCreating] = useState(false)
   const [simulating, setSimulating] = useState(false)
@@ -100,6 +114,56 @@ export default function TestMatchesPage() {
     setOddsN(newOddsN)
     setOdds2(newOdds2)
     toast.success("Cotes générées aléatoirement ✨")
+  }
+
+  function generateRandomResult() {
+    if (!selectedMatch) return
+
+    // Generate random result (weighted: 40% 1, 30% N, 30% 2)
+    const rand = Math.random()
+    let h: number, a: number
+
+    if (rand < 0.4) {
+      // Home win: 1-0, 2-0, 2-1, 3-1, 3-0, 3-2
+      const results = [[1, 0], [2, 0], [2, 1], [3, 1], [3, 0], [3, 2], [4, 1], [4, 2]]
+      const result = results[Math.floor(Math.random() * results.length)]
+      h = result[0]
+      a = result[1]
+    } else if (rand < 0.7) {
+      // Draw: 0-0, 1-1, 2-2, 3-3
+      const results = [[0, 0], [1, 1], [2, 2], [3, 3]]
+      const result = results[Math.floor(Math.random() * results.length)]
+      h = result[0]
+      a = result[1]
+    } else {
+      // Away win: 0-1, 0-2, 1-2, 1-3, 0-3, 2-3
+      const results = [[0, 1], [0, 2], [1, 2], [1, 3], [0, 3], [2, 3], [1, 4], [2, 4]]
+      const result = results[Math.floor(Math.random() * results.length)]
+      h = result[0]
+      a = result[1]
+    }
+
+    setHomeScore(h)
+    setAwayScore(a)
+
+    // Generate realistic stats
+    const homePoss = 30 + Math.random() * 40 // 30-70%
+    const newStats = {
+      homePossession: Math.round(homePoss),
+      homeShots: 8 + Math.floor(Math.random() * 15),
+      homeShotsOnTarget: Math.floor((h + 1) + Math.random() * 3),
+      homeCorners: 3 + Math.floor(Math.random() * 8),
+      homeYellowCards: Math.floor(Math.random() * 4),
+      homeRedCards: Math.random() < 0.1 ? 1 : 0,
+      awayPossession: 100 - Math.round(homePoss),
+      awayShots: 8 + Math.floor(Math.random() * 15),
+      awayShotsOnTarget: Math.floor((a + 1) + Math.random() * 3),
+      awayCorners: 3 + Math.floor(Math.random() * 8),
+      awayYellowCards: Math.floor(Math.random() * 4),
+      awayRedCards: Math.random() < 0.1 ? 1 : 0,
+    }
+    setStats(newStats)
+    toast.success("Résultat généré aléatoirement! 🎲")
   }
 
   async function createMatch() {
@@ -340,6 +404,14 @@ export default function TestMatchesPage() {
 
             {selectedMatch && (
               <>
+                {/* Bouton génération aléatoire */}
+                <button
+                  onClick={generateRandomResult}
+                  className="w-full py-2 px-4 mb-4 bg-[var(--bg-3)] text-[var(--fg-1)] rounded-lg font-semibold text-sm hover:bg-[var(--bg-2)] transition"
+                >
+                  🎲 Générer résultat + stats
+                </button>
+
                 {/* Scores */}
                 <div className="bg-[var(--bg-3)] rounded-lg p-4 mb-4">
                   <p className="text-sm text-[var(--fg-3)] mb-2">Score final</p>
@@ -370,8 +442,39 @@ export default function TestMatchesPage() {
                   </div>
                 </div>
 
+                {/* Stats */}
+                <div className="bg-[var(--bg-2)] rounded-lg p-3 mb-4 text-sm">
+                  <p className="text-xs text-[var(--fg-3)] mb-2 font-bold">STATISTIQUES</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[11px] text-[var(--fg-3)]">Possession</p>
+                      <p className="text-xs font-bold text-[var(--fg-1)]">{stats.homePossession}% / {stats.awayPossession}%</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[var(--fg-3)]">Tirs</p>
+                      <p className="text-xs font-bold text-[var(--fg-1)]">{stats.homeShots} / {stats.awayShots}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[var(--fg-3)]">Tirs cadrés</p>
+                      <p className="text-xs font-bold text-[var(--fg-1)]">{stats.homeShotsOnTarget} / {stats.awayShotsOnTarget}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[var(--fg-3)]">Corners</p>
+                      <p className="text-xs font-bold text-[var(--fg-1)]">{stats.homeCorners} / {stats.awayCorners}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[var(--fg-3)]">Cartons J</p>
+                      <p className="text-xs font-bold text-[var(--fg-1)]">{stats.homeYellowCards} / {stats.awayYellowCards}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[var(--fg-3)]">Cartons R</p>
+                      <p className="text-xs font-bold text-[var(--fg-1)]">{stats.homeRedCards} / {stats.awayRedCards}</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Résultat */}
-                <div className="bg-[var(--bg-2)] rounded-lg p-3 mb-4">
+                <div className="bg-[var(--bg-3)] rounded-lg p-3 mb-4">
                   <p className="text-sm text-[var(--fg-3)] mb-2">Résultat</p>
                   <p className="text-lg font-bold text-[var(--fg-1)]">
                     {homeScore > awayScore
