@@ -15,8 +15,8 @@ export async function GET() {
       {
         name: "Live Events Notifications",
         url: `${baseUrl}/api/cron/live-events?secret=${cronSecret}`,
-        frequency: "Toutes les 30 minutes (*/30 * * * *)",
-        description: "Envoie des notifications pour les buts, cartons, remplacements, match terminé",
+        frequency: "Toutes les 5 minutes (*/5 * * * *)",
+        description: "Envoie des notifications pour les buts, cartons, remplacements, match terminé (uniquement pour les 28 ligues autorisées)",
       },
       {
         name: "Bet Settlement Notifications",

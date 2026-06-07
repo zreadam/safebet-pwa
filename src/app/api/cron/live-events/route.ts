@@ -5,6 +5,33 @@ import { sendPushToAll } from "@/app/api/push/send/push-helper"
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
 const CRON_SECRET = process.env.CRON_SECRET
 
+// 28 authorized competitions (must match refresh-matches.ts)
+const ALLOWED_COMPETITIONS = new Set([
+  "L1", "PL", "LIGA", "BL", "SA", "ERE", "LPT", "STL",
+  "CDRF", "FAC", "CC", "CDR", "SCES", "DFBP", "CI", "SCIT", "TRCH",
+  "UCL", "EL", "ECL",
+  "CDM", "EURO", "NL", "CAN", "LIB", "CWC", "CA", "CIC", "AMICAL",
+])
+
+// Map API-Football league IDs to our internal competition codes
+const LEAGUE_TO_COMP: Record<number, string> = {
+  39: "PL",    // Premier League
+  61: "LIGA",  // La Liga
+  78: "BL",    // Bundesliga
+  135: "SA",   // Serie A
+  37: "L1",    // Ligue 1
+  88: "ERE",   // Eredivisie
+  64: "LPT",   // Liga Portugal
+  203: "STL",  // Süper Lig
+  2: "CDM",    // World Cup
+  4: "EURO",   // Euro
+  3: "NL",     // Nations League
+  33: "CAN",   // African Cup
+  71: "LIB",   // Copa Libertadores
+  72: "CA",    // Copa America
+  // Add more as needed
+}
+
 interface FixtureTeam {
   id: number
   name: string
@@ -169,6 +196,15 @@ export async function GET(req: Request) {
   // ── 3. Process live fixture events ──────────────────────────────
   for (const fixture of liveFixtures) {
     const fixtureId = fixture.fixture.id
+    const leagueId = fixture.league.id
+    const comp = LEAGUE_TO_COMP[leagueId]
+
+    // Skip if not in authorized competitions
+    if (!comp || !ALLOWED_COMPETITIONS.has(comp)) {
+      console.log(`[live-events] Skipping fixture ${fixtureId} - league ${leagueId} not authorized`)
+      continue
+    }
+
     const homeTeam = fixture.teams.home.name
     const awayTeam = fixture.teams.away.name
     const score = `${fixture.goals.home ?? 0}-${fixture.goals.away ?? 0}`
