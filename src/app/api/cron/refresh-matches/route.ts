@@ -313,11 +313,8 @@ async function fetchOddsPapiMatches(now: Date) {
 }
 
 export async function GET(req: Request) {
-  const url = new URL(req.url)
-  const testMode = url.searchParams.get("test") === "true"
-
   const authHeader = req.headers.get("authorization")
-  if (!testMode && CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
