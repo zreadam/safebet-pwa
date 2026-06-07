@@ -9,6 +9,7 @@ import AppShell from "@/components/layout/AppShell"
 import { BluffBadge } from "@/components/ui/bluff-badge"
 import { useProfile } from "@/hooks/useProfile"
 import { useAuth } from "@/hooks/useAuth"
+import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import type { Area } from "react-easy-crop"
@@ -121,7 +122,9 @@ function SettingRow({ icon, label, sub, toggle, rightText, href, danger, onClick
 export default function ProfilPage() {
   const { profile, loading, refetch } = useProfile()
   const { signOut } = useAuth()
+  const supabase = createClient()
 
+  const [isAdmin, setIsAdmin] = useState(false)
   const [darkMode, setDarkMode]         = useState(false)
   const [notifs, setNotifs]             = useState(true)
   const [notifBets, setNotifBets]       = useState(true)
@@ -147,6 +150,14 @@ export default function ProfilPage() {
       setUsername(profile.username || "")
     }
   }, [profile])
+
+  useEffect(() => {
+    async function checkAdmin() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsAdmin(user?.email === "aziregue633@gmail.com")
+    }
+    checkAdmin()
+  }, [])
 
   useEffect(() => {
     setPushSupported("Notification" in window && "serviceWorker" in navigator)
@@ -452,6 +463,14 @@ export default function ProfilPage() {
                 sub={isPremium ? "Tu es Premium ✨" : "Passe au Premium"}
                 href="/premium"
               />
+              {isAdmin && (
+                <SettingRow
+                  icon="ti-gamepad-2"
+                  label="Test Matches"
+                  sub="Créer et simuler des matchs"
+                  href="/test-matches"
+                />
+              )}
               <SettingRow
                 icon="ti-logout"
                 label="Déconnexion"

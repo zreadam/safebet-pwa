@@ -2,13 +2,26 @@
 
 export const dynamic = "force-dynamic"
 
+import { useEffect, useState } from "react"
+import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { useProfile } from "@/hooks/useProfile"
+import { createClient } from "@/lib/supabase/client"
 import { BluffBadge } from "@/components/ui/bluff-badge"
 
 export default function ProfilDesktop() {
   const { user, signOut } = useAuth()
   const { profile } = useProfile()
+  const supabase = createClient()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    async function checkAdmin() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsAdmin(user?.email === "aziregue633@gmail.com")
+    }
+    checkAdmin()
+  }, [])
 
   return (
     <div className="w-full max-w-2xl">
@@ -75,6 +88,16 @@ export default function ProfilDesktop() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Admin Panel */}
+      {isAdmin && (
+        <Link
+          href="/test-matches"
+          className="w-full px-6 py-3 rounded-[10px] bg-[var(--emerald-500)] text-white font-semibold hover:bg-[var(--emerald-600)] transition-colors text-center block mb-4"
+        >
+          🎮 Test Matches Admin
+        </Link>
       )}
 
       {/* Logout */}
