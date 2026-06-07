@@ -96,7 +96,7 @@ export default function ProfilDesktop() {
           href="/test-matches"
           className="w-full px-6 py-3 rounded-[10px] bg-[var(--emerald-500)] text-white font-semibold hover:bg-[var(--emerald-600)] transition-colors text-center block mb-4"
         >
-          🎮 Test Matches Admin
+          ⚽ Test Matches Admin 🎮
         </Link>
       )}
 

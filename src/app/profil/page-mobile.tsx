@@ -466,7 +466,7 @@ export default function ProfilPage() {
               {isAdmin && (
                 <SettingRow
                   icon="ti-gamepad-2"
-                  label="Test Matches"
+                  label="Test Matches ⚽"
                   sub="Créer et simuler des matchs"
                   href="/test-matches"
                 />
