@@ -16,6 +16,8 @@ import { createClient } from "@/lib/supabase/server"
 // ⚠️ REMOVED: DEMO_MATCHES avec cotes par défaut
 // Les matchs doivent provenir UNIQUEMENT de la BDD (Supabase)
 
+export const dynamic = "force-dynamic"
+
 export async function GET() {
   const supabase = await createClient()
   const now = new Date()
@@ -28,6 +30,7 @@ export async function GET() {
     .select("*")
     .gte("kickoff", windowStart)
     .lte("kickoff", windowEnd)
+    .not("id", "like", "test_%")  // Exclude test matches from homepage
     .order("kickoff", { ascending: true })
 
   if (!matches || matches.length === 0) {
@@ -64,5 +67,9 @@ export async function GET() {
     ).catch(() => {})
   }
 
-  return NextResponse.json(result)
+  return NextResponse.json(result, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    },
+  })
 }
