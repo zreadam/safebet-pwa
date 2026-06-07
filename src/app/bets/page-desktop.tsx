@@ -9,14 +9,14 @@ import { cn } from "@/lib/utils"
 interface Bet {
   id: string
   match_id: string
-  home_team: string
-  away_team: string
-  prediction: string
+  match_label: string
+  selection: string
+  market: string
   odds: number
-  amount: number
+  stake: number
+  potential_gain: number
   status: "pending" | "won" | "lost"
-  created_at: string
-  match_date: string
+  placed_at: string
 }
 
 export default function BetsPageDesktop() {
@@ -140,10 +140,10 @@ export default function BetsPageDesktop() {
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className="font-semibold text-[var(--fg-1)] text-[14px] mb-1">
-                        {bet.home_team} vs {bet.away_team}
+                        {bet.match_label}
                       </p>
                       <p className="text-[12px] text-[var(--fg-3)]">
-                        {new Date(bet.match_date).toLocaleDateString("fr-FR")}
+                        {new Date(bet.placed_at).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
                     <div className={cn("px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap h-fit", getStatusColor(bet.status))}>
@@ -153,8 +153,8 @@ export default function BetsPageDesktop() {
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="p-2 bg-[var(--bg-2)] rounded-lg text-center">
-                      <p className="text-[11px] text-[var(--fg-3)] mb-1">Prédiction</p>
-                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{bet.prediction}</p>
+                      <p className="text-[11px] text-[var(--fg-3)] mb-1">Sélection</p>
+                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{bet.selection}</p>
                     </div>
                     <div className="p-2 bg-[var(--bg-2)] rounded-lg text-center">
                       <p className="text-[11px] text-[var(--fg-3)] mb-1">Cote</p>
@@ -162,7 +162,7 @@ export default function BetsPageDesktop() {
                     </div>
                     <div className="p-2 bg-[var(--bg-2)] rounded-lg text-center">
                       <p className="text-[11px] text-[var(--fg-3)] mb-1">Mise</p>
-                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{bet.amount}B</p>
+                      <p className="font-semibold text-[var(--fg-1)] text-[13px]">{bet.stake} B</p>
                     </div>
                   </div>
                 </button>
@@ -193,27 +193,14 @@ export default function BetsPageDesktop() {
 
           {/* Content */}
           <div className="px-6 space-y-3">
-            {/* Teams + Odds */}
+            {/* Match Info */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex-1 text-center">
-                  <p className="text-white text-[11px] mb-1">{selectedBet.home_team}</p>
-                  <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center mx-auto">
-                    <span className="text-white text-[10px] font-bold">HOM</span>
-                  </div>
-                </div>
-                <div className="text-center px-2">
-                  <p className="text-white text-[10px] font-semibold mb-1">Cote</p>
-                  <p className="text-white text-[20px] font-bold [font-family:var(--font-display)]">
-                    {selectedBet.odds.toFixed(2)}
-                  </p>
-                </div>
-                <div className="flex-1 text-center">
-                  <p className="text-white text-[11px] mb-1">{selectedBet.away_team}</p>
-                  <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.15)] flex items-center justify-center mx-auto">
-                    <span className="text-white text-[10px] font-bold">EXT</span>
-                  </div>
-                </div>
+              <div className="text-center">
+                <p className="text-white text-[12px] font-semibold">{selectedBet.match_label}</p>
+                <p className="text-white text-[11px] text-opacity-70 mt-1">{selectedBet.market}</p>
+                <p className="text-white text-[20px] font-bold [font-family:var(--font-display)] mt-2">
+                  {selectedBet.odds.toFixed(2)}
+                </p>
               </div>
             </div>
 
@@ -234,23 +221,23 @@ export default function BetsPageDesktop() {
             {/* Details grid */}
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
-                <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Prédiction</p>
-                <p className="text-[12px] font-semibold text-white">{selectedBet.prediction}</p>
+                <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Sélection</p>
+                <p className="text-[12px] font-semibold text-white">{selectedBet.selection}</p>
               </div>
               <div className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
                 <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Mise</p>
-                <p className="text-[12px] font-semibold text-white">{selectedBet.amount} B</p>
+                <p className="text-[12px] font-semibold text-white">{selectedBet.stake} B</p>
               </div>
               <div className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
                 <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Gain potentiel</p>
                 <p className="text-[12px] font-semibold text-white">
-                  {(selectedBet.amount * selectedBet.odds).toFixed(2)} B
+                  {selectedBet.potential_gain.toFixed(2)} B
                 </p>
               </div>
               <div className="bg-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 border border-[rgba(255,255,255,0.1)]">
                 <p className="text-[10px] text-[rgba(255,255,255,0.7)] mb-1">Placé le</p>
                 <p className="text-[12px] font-semibold text-white">
-                  {new Date(selectedBet.created_at).toLocaleDateString("fr-FR")}
+                  {new Date(selectedBet.placed_at).toLocaleDateString("fr-FR")}
                 </p>
               </div>
             </div>
@@ -261,11 +248,11 @@ export default function BetsPageDesktop() {
                 <p className="text-[11px] text-[rgba(255,255,255,0.8)] mb-2 text-center">Résultat final</p>
                 {selectedBet.status === "won" ? (
                   <p className="text-[24px] font-bold [font-family:var(--font-display)] text-white text-center">
-                    +{(selectedBet.amount * selectedBet.odds - selectedBet.amount).toFixed(2)} B
+                    +{(selectedBet.potential_gain - selectedBet.stake).toFixed(2)} B
                   </p>
                 ) : (
                   <p className="text-[24px] font-bold [font-family:var(--font-display)] text-white text-center">
-                    -{selectedBet.amount} B
+                    -{selectedBet.stake} B
                   </p>
                 )}
               </div>

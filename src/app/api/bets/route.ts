@@ -54,16 +54,15 @@ export async function POST(request: Request) {
     const betsToInsert = selections.map((sel: any) => ({
       user_id: user.id,
       match_id: sel.matchId,
-      prediction: sel.selectionLabel,
+      match_label: `${sel.matchLabel}`,
       market: sel.market,
-      market_label: sel.marketLabel,
+      selection: sel.selection,
       odds: sel.odds,
-      amount: type === "simple" ? stake : stake, // For combo, stake is per bet
+      stake: type === "simple" ? stake : stake, // For combo, stake is per bet
+      potential_gain: stake * sel.odds,
       status: "pending",
+      is_live: false,
       placed_at: new Date().toISOString(),
-      bet_group_id: type === "combo" ? betGroupId : null,
-      is_combo: type === "combo",
-      total_combo_odds: type === "combo" ? total_odds : null,
     }))
 
     const { data: insertedBets, error: insertError } = await supabase
@@ -72,21 +71,29 @@ export async function POST(request: Request) {
       .select()
 
     if (insertError) {
+      console.error("Insert error:", insertError)
       return NextResponse.json({ error: insertError.message }, { status: 400 })
     }
 
-    // Deduct stake from balance
+    // Deduct stake from balance and update total bets
     const { data: profile } = await supabase
       .from("profiles")
-      .select("balance")
+      .select("balance, total_bets")
       .eq("id", user.id)
       .single()
 
     const newBalance = (profile?.balance ?? 0) - stake
-    await supabase
+    const { error: updateError } = await supabase
       .from("profiles")
-      .update({ balance: newBalance })
+      .update({
+        balance: newBalance,
+        total_bets: (profile?.total_bets ?? 0) + selections.length
+      })
       .eq("id", user.id)
+
+    if (updateError) {
+      console.error("Update profile error:", updateError)
+    }
 
     // Update quest
     try {
