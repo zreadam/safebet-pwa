@@ -36,6 +36,24 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
   const done = m.state === "done"
   const cc   = COMP_COLORS[m.competition] ?? "#10B981"
 
+  // Format date and time
+  const kickoffDate = new Date(m.kickoff)
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const isToday = kickoffDate.toDateString() === today.toDateString()
+  const isTomorrow = kickoffDate.toDateString() === tomorrow.toDateString()
+
+  const dateLabel = isToday
+    ? "Aujourd'hui"
+    : isTomorrow
+    ? "Demain"
+    : kickoffDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" })
+
+  const timeLabel = kickoffDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })
+  const dateTimeLabel = `${dateLabel} à ${timeLabel}`
+
   // Déterminer le résultat pour afficher la cote gagnante en vert
   const winner: "1" | "N" | "2" | null = done
     ? (m.home_score != null && m.away_score != null)
@@ -75,7 +93,7 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
         {done && <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-[var(--emerald-50)] text-[var(--emerald-900)]">Terminé</span>}
         {!live && !done && (
           <span className="text-[11px] font-semibold px-[10px] py-1 rounded-full bg-[#EFF6FF] text-[#1E3A5F]">
-            {new Date(m.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
+            {dateTimeLabel}
           </span>
         )}
       </div>
@@ -95,7 +113,7 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
           {live && <div className="text-xs text-[var(--fg-3)] mt-1">{m.minute}</div>}
           {!live && !done && (
             <div className="text-xs text-[var(--fg-3)] mt-1">
-              {new Date(m.kickoff).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}
+              {dateTimeLabel}
             </div>
           )}
         </div>
