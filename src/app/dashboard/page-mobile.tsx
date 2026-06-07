@@ -542,7 +542,7 @@ export default function DashboardPage() {
 
   /* fetch matches + bet counts pour tri par popularité */
   useEffect(() => {
-    fetch("/api/matches")
+    fetch("/api/matches", { cache: "no-store" })
       .then(r => r.json())
       .then(data => { setMatches(Array.isArray(data) ? data : []); setLoading(false) })
       .catch(() => setLoading(false))

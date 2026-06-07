@@ -29,10 +29,10 @@ export default function DashboardDesktop() {
   useEffect(() => {
     const fetchMatches = async () => {
       try {
-        const res = await fetch("/api/matches")
+        const res = await fetch("/api/matches", { cache: "no-store" })
         if (res.ok) {
           const data = await res.json()
-          setMatches(data.matches || [])
+          setMatches(Array.isArray(data) ? data : [])
         }
       } catch (error) {
         console.error("Erreur lors du chargement des matchs:", error)
