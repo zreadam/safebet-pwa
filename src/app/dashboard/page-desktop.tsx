@@ -7,12 +7,24 @@ import Link from "next/link"
 import { useProfile } from "@/hooks/useProfile"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { OddsPreferenceSelector } from "@/components/dashboard/OddsPreferenceSelector"
+import { getDisplayOdds, getMarketLabel } from "@/lib/odds-formatter"
 import type { Match } from "@/types"
 
 export default function DashboardDesktop() {
   const { profile } = useProfile()
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedMarket, setSelectedMarket] = useState<string>("result")
+  const [showSelector, setShowSelector] = useState(false)
+
+  useEffect(() => {
+    // Load preference from localStorage
+    const saved = localStorage.getItem("dashboard-odds-preference")
+    if (saved) {
+      setSelectedMarket(saved)
+    }
+  }, [])
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -63,12 +75,26 @@ export default function DashboardDesktop() {
       {/* Matches Grid */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[20px] font-semibold [font-family:var(--font-display)] text-[var(--fg-1)]">
-            Matchs Disponibles
-          </h2>
-          <Link href="/paris" className="text-[var(--emerald-600)] font-semibold hover:underline">
-            Voir tous →
-          </Link>
+          <div>
+            <h2 className="text-[20px] font-semibold [font-family:var(--font-display)] text-[var(--fg-1)]">
+              Matchs Disponibles
+            </h2>
+            <p className="text-[12px] text-[var(--fg-3)] mt-1">
+              Cotes affichées: {getMarketLabel(selectedMarket)}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowSelector(true)}
+              className="px-4 py-2 rounded-lg bg-[var(--bg-2)] hover:bg-[var(--bg-3)] text-[var(--fg-2)] hover:text-[var(--fg-1)] transition-colors text-sm font-semibold flex items-center gap-2"
+            >
+              <i className="ti ti-settings text-[16px]" />
+              Personnaliser
+            </button>
+            <Link href="/paris" className="text-[var(--emerald-600)] font-semibold hover:underline">
+              Voir tous →
+            </Link>
+          </div>
         </div>
 
         {loading ? (
@@ -133,19 +159,18 @@ export default function DashboardDesktop() {
                 </div>
 
                 {/* Odds */}
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: "1", value: "1.95" },
-                    { label: "X", value: "3.50" },
-                    { label: "2", value: "2.10" },
-                  ].map((odd) => (
+                <div className={cn(
+                  "gap-2",
+                  getDisplayOdds(match, selectedMarket).length === 3 ? "grid grid-cols-3" : "grid grid-cols-2"
+                )}>
+                  {getDisplayOdds(match, selectedMarket).map((odd) => (
                     <button
-                      key={odd.label}
+                      key={odd.key}
                       className="py-2 px-2 rounded-[10px] border border-[var(--border-light)] bg-[var(--bg-2)] hover:border-[var(--emerald-300)] hover:bg-[var(--emerald-50)] transition-colors text-center"
                     >
                       <p className="text-[11px] text-[var(--fg-3)]">{odd.label}</p>
                       <p className="text-[16px] font-bold [font-family:var(--font-display)] text-[var(--fg-1)]">
-                        {odd.value}
+                        {(odd.value || 0).toFixed(2)}
                       </p>
                     </button>
                   ))}
@@ -155,6 +180,11 @@ export default function DashboardDesktop() {
           </div>
         )}
       </div>
+
+      {/* Preferences Modal */}
+      {showSelector && (
+        <OddsPreferenceSelector onClose={() => setShowSelector(false)} />
+      )}
     </div>
   )
 }
