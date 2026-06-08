@@ -3,6 +3,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { PremiumLock } from "@/components/ui/premium-lock"
+import { getFlagPath, getCountryName } from "@/lib/flags"
+import { getCountryCodeForTeam } from "@/lib/team-to-country"
 import type { Match } from "@/types"
 
 const COMP_COLORS: Record<string, string> = {
@@ -11,16 +13,39 @@ const COMP_COLORS: Record<string, string> = {
   CDM: "#f59e0b",  EL:  "#f97316",
 }
 
-function Crest({ code, color, size = 44 }: { code: string; color?: string; size?: number }) {
+function Crest({ teamName, countryCode, color, size = 44 }: { teamName?: string; countryCode?: string; color?: string; size?: number }) {
+  // Try to get country code from team name
+  const country = countryCode || (teamName ? getCountryCodeForTeam(teamName) : null)
+
+  // If we have a country code, display flag
+  if (country) {
+    return (
+      <div className="rounded-full flex items-center justify-center overflow-hidden border border-[var(--border-light)]"
+           style={{
+             width: size,
+             height: size,
+           }}>
+        <img
+          src={getFlagPath(country)}
+          alt={getCountryName(country)}
+          className="w-full h-full object-contain"
+          title={getCountryName(country)}
+        />
+      </div>
+    )
+  }
+
+  // Fallback: Display initials with color background
   return (
     <div className="rounded-full flex items-center justify-center font-bold [font-family:var(--font-display)]"
          style={{
-           width: size, height: size,
+           width: size,
+           height: size,
            background: color ? `${color}22` : "var(--bg-3)",
            color: color ?? "var(--fg-2)",
            fontSize: size * 0.34,
          }}>
-      {code.slice(0, 3)}
+      {teamName?.slice(0, 3) || countryCode?.slice(0, 3)}
     </div>
   )
 }
@@ -101,7 +126,7 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
       {/* Teams */}
       <div className="flex items-center justify-between mb-[14px]">
         <div className="flex flex-col items-center gap-[7px] w-24">
-          <Crest code={m.home_team_code} color={cc} />
+          <Crest teamName={m.home_team} countryCode={m.home_team_code} color={cc} />
           <span className="text-xs font-medium text-[var(--fg-2)] text-center">{m.home_team}</span>
         </div>
         <div className="text-center">
@@ -118,7 +143,7 @@ export function MatchCard({ match: m, onOddsSelect, selectedOdds }: Props) {
           )}
         </div>
         <div className="flex flex-col items-center gap-[7px] w-24">
-          <Crest code={m.away_team_code} color={cc} />
+          <Crest teamName={m.away_team} countryCode={m.away_team_code} color={cc} />
           <span className="text-xs font-medium text-[var(--fg-2)] text-center">{m.away_team}</span>
         </div>
       </div>
