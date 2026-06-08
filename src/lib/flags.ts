@@ -1,11 +1,11 @@
 /**
  * Get flag path for a country code (ISO 2-letter codes)
- * Uses high-quality 256x256 PNG flags from w2560 collection
+ * Uses circular SVG flags from circle-flags collection
  */
 export function getFlagPath(countryCode?: string): string {
-  if (!countryCode) return "/flags/unknown.png"
+  if (!countryCode) return "/flags/unknown.svg"
   const lower = countryCode.toLowerCase()
-  return `/flags/${lower}.png`
+  return `/flags/${lower}.svg`
 }
 
 /**
