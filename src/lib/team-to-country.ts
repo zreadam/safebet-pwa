@@ -84,7 +84,6 @@ export const NATIONAL_TEAMS: Record<string, string> = {
   "Salvador": "SV",
   "Guatemala": "GT",
   "Panama": "PA",
-  "Panama": "PA",
   "Jamaica": "JM",
   "Jamaïque": "JM",
   "Trinidad and Tobago": "TT",
