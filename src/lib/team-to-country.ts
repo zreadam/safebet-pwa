@@ -147,7 +147,6 @@ export const NATIONAL_TEAMS: Record<string, string> = {
   "Nicaragua": "NI",
   "Curacao": "CW",
   "Curaçao": "CW",
-  "Curaçao": "CW",
 
   // Asia
   "China": "CN",
