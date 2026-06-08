@@ -57,27 +57,42 @@ export const NATIONAL_TEAMS: Record<string, string> = {
 
   // Americas
   "United States": "US",
+  "USA": "US",
   "Canada": "CA",
   "Mexico": "MX",
+  "Mexique": "MX",
   "Brazil": "BR",
+  "Brésil": "BR",
   "Argentina": "AR",
+  "Argentine": "AR",
   "Chile": "CL",
+  "Chili": "CL",
   "Colombia": "CO",
+  "Colombie": "CO",
   "Peru": "PE",
+  "Pérou": "PE",
   "Uruguay": "UY",
   "Paraguay": "PY",
   "Venezuela": "VE",
   "Ecuador": "EC",
+  "Équateur": "EC",
   "Bolivia": "BO",
+  "Bolivie": "BO",
   "Costa Rica": "CR",
   "Honduras": "HN",
   "El Salvador": "SV",
+  "Salvador": "SV",
   "Guatemala": "GT",
   "Panama": "PA",
+  "Panama": "PA",
   "Jamaica": "JM",
+  "Jamaïque": "JM",
   "Trinidad and Tobago": "TT",
+  "Trinité-et-Tobago": "TT",
   "Haiti": "HT",
+  "Haïti": "HT",
   "Dominican Republic": "DO",
+  "République Dominicaine": "DO",
   "Belize": "BZ",
   "Suriname": "SR",
   "Guyana": "GY",
@@ -126,23 +141,34 @@ export const NATIONAL_TEAMS: Record<string, string> = {
   "Kenya": "KE",
   "Cameroon": "CM",
   "Ivory Coast": "CI",
+  "Côte d'Ivoire": "CI",
+  "Cote d'Ivoire": "CI",
   "Senegal": "SN",
+  "Sénégal": "SN",
   "Mali": "ML",
   "Burkina Faso": "BF",
+  "Burkina": "BF",
   "Guinea": "GN",
+  "Guinée": "GN",
   "Sierra Leone": "SL",
   "Liberia": "LR",
   "Benin": "BJ",
+  "Bénin": "BJ",
   "Togo": "TG",
   "Ethiopia": "ET",
+  "Éthiopie": "ET",
   "Uganda": "UG",
+  "Ouganda": "UG",
   "Rwanda": "RW",
   "Tanzania": "TZ",
+  "Tanzanie": "TZ",
   "Zimbabwe": "ZW",
   "Zambia": "ZM",
+  "Zambie": "ZM",
   "Botswana": "BW",
   "Lesotho": "LS",
   "Namibia": "NA",
+  "Namibie": "NA",
   "Angola": "AO",
   "Mozambique": "MZ",
   "Malawi": "MW",
@@ -228,11 +254,36 @@ export const NATIONAL_TEAMS: Record<string, string> = {
 }
 
 /**
+ * Normalize team name for matching (remove accents, lowercase, trim)
+ */
+function normalizeTeamName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // Remove accents
+    .trim()
+}
+
+/**
  * Obtient le code pays pour une équipe
  */
 export function getCountryCodeForTeam(teamName?: string): string | null {
   if (!teamName) return null
-  return NATIONAL_TEAMS[teamName] || null
+
+  // Exact match first
+  if (NATIONAL_TEAMS[teamName]) {
+    return NATIONAL_TEAMS[teamName]
+  }
+
+  // Normalized match (ignore accents and case)
+  const normalizedInput = normalizeTeamName(teamName)
+  for (const [key, code] of Object.entries(NATIONAL_TEAMS)) {
+    if (normalizeTeamName(key) === normalizedInput) {
+      return code
+    }
+  }
+
+  return null
 }
 
 /**
