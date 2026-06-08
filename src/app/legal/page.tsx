@@ -184,7 +184,8 @@ export default function LegalPage() {
         {/* Footer Note */}
         <div className="mt-12 pt-8 border-t border-[var(--border-light)] text-center">
           <p className="text-[12px] text-[var(--fg-4)]">
-            Dernière mise à jour: 8 Juin 2026<br>
+            Dernière mise à jour: 8 Juin 2026
+            <br />
             SafeBet © 2026 - Tous droits réservés
           </p>
         </div>
