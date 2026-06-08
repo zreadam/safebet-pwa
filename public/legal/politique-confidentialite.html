@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Politique de Confidentialité - SafeBet</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #10B981; margin-top: 30px; }
+        h2 { color: #059669; margin-top: 25px; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f0f0f0; }
+        strong { color: #059669; }
+    </style>
+</head>
+<body>
+    <div class="section">
+        <h1>🔒 Politique de Confidentialité - SafeBet</h1>
+        <p><strong>Date d'entrée en vigueur:</strong> 8 Juin 2026</p>
+        <p>Cette politique explique comment SafeBet collecte, utilise et protège vos données personnelles.
+        Elle s'applique en conformité avec le Règlement Général sur la Protection des Données (RGPD) et la loi française.</p>
+    </div>
+
+    <div class="section">
+        <h2>1. Responsable du traitement des données</h2>
+        <table>
+            <tr>
+                <td><strong>Responsable:</strong></td>
+                <td>SafeBet (Zreadam)</td>
+            </tr>
+            <tr>
+                <td><strong>Contact DPO:</strong></td>
+                <td>privacy@safebet.local</td>
+            </tr>
+            <tr>
+                <td><strong>Adresse:</strong></td>
+                <td>SafeBet, Paris, France</td>
+            </tr>
+            <tr>
+                <td><strong>Base légale:</strong></td>
+                <td>Consentement (article 6, RGPD)</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>2. Données collectées</h2>
+
+        <h3>2.1 Données d'identification</h3>
+        <table>
+            <tr>
+                <th>Donnée</th>
+                <th>Source</th>
+                <th>Obligatoire?</th>
+                <th>Finalité</th>
+            </tr>
+            <tr>
+                <td>Email</td>
+                <td>Inscription</td>
+                <td>✅ Oui</td>
+                <td>Connexion, notifications, support</td>
+            </tr>
+            <tr>
+                <td>Nom d'utilisateur</td>
+                <td>Inscription</td>
+                <td>✅ Oui</td>
+                <td>Affichage publique, ligues, classements</td>
+            </tr>
+            <tr>
+                <td>Mot de passe</td>
+                <td>Inscription</td>
+                <td>✅ Oui</td>
+                <td>Authentification (hashé, jamais stocké en clair)</td>
+            </tr>
+            <tr>
+                <td>Pays</td>
+                <td>Profil</td>
+                <td>⭕ Non</td>
+                <td>Affichage drapeau, localisation, analytics</td>
+            </tr>
+            <tr>
+                <td>Avatar (URL ou initiales)</td>
+                <td>Profil/Generation</td>
+                <td>⭕ Non</td>
+                <td>Affichage profil</td>
+            </tr>
+        </table>
+
+        <h3>2.2 Données de comptes et transactions</h3>
+        <table>
+            <tr>
+                <th>Donnée</th>
+                <th>Source</th>
+                <th>Finalité</th>
+            </tr>
+            <tr>
+                <td>Historique de paris</td>
+                <td>Activité utilisateur</td>
+                <td>Affichage historique, statistiques, classements</td>
+            </tr>
+            <tr>
+                <td>Solde Bluff</td>
+                <td>Algorithme (initial + paris)</td>
+                <td>Gestion du compte, affichage</td>
+            </tr>
+            <tr>
+                <td>Équipe/Ligue favorite</td>
+                <td>Profil</td>
+                <td>Recommandations, personnalisation</td>
+            </tr>
+            <tr>
+                <td>Quêtes/Statut Premium</td>
+                <td>Activité</td>
+                <td>Accès features, gamification</td>
+            </tr>
+            <tr>
+                <td>Statut Stripe</td>
+                <td>Intégration Stripe</td>
+                <td>Gestion abonnement Premium</td>
+            </tr>
+        </table>
+
+        <h3>2.3 Données techniques et cookies</h3>
+        <table>
+            <tr>
+                <th>Donnée</th>
+                <th>Source</th>
+                <th>Finalité</th>
+            </tr>
+            <tr>
+                <td>Adresse IP</td>
+                <td>Logs serveur</td>
+                <td>Sécurité, détection fraude, analytics</td>
+            </tr>
+            <tr>
+                <td>User-Agent (navigateur)</td>
+                <td>Logs serveur</td>
+                <td>Debug, compatibilité, analytics</td>
+            </tr>
+            <tr>
+                <td>Cookies session</td>
+                <td>Navigateur</td>
+                <td>Maintien authentification, prefs UX</td>
+            </tr>
+            <tr>
+                <td>Service Worker cache</td>
+                <td>PWA local storage</td>
+                <td>Offline support, performance</td>
+            </tr>
+            <tr>
+                <td>Google Analytics</td>
+                <td>Script de tracking</td>
+                <td>Analytics de comportement (anonymisé)</td>
+            </tr>
+        </table>
+
+        <h3>2.4 Données de paiement</h3>
+        <ul>
+            <li><strong>Données Stripe:</strong> Numéro carte, expiration, CVC (traité par Stripe uniquement, jamais stocké chez SafeBet)</li>
+            <li><strong>Stripe ID:</strong> Identifiant client Stripe (stocké chez SafeBet pour récurrence)</li>
+            <li><strong>Factures/Historique:</strong> Dates de paiement, montants, statuts (conservés 7 ans pour comptabilité)</li>
+            <li><strong>Sécurité:</strong> Données cryptées en transit (HTTPS), Stripe PCI-DSS L1 certified</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>3. Finalités du traitement</h2>
+
+        <h3>Finalités principales</h3>
+        <table>
+            <tr>
+                <th>Finalité</th>
+                <th>Base légale</th>
+                <th>Durée</th>
+            </tr>
+            <tr>
+                <td>Fourniture du service (compte, paris)</td>
+                <td>Contrat (CG)</td>
+                <td>Pendant compte + 30j après suppression</td>
+            </tr>
+            <tr>
+                <td>Notifications (email, app)</td>
+                <td>Consentement</td>
+                <td>Jusqu'à désinscription</td>
+            </tr>
+            <tr>
+                <td>Support client et SAV</td>
+                <td>Contrat</td>
+                <td>1 an après dernière requête</td>
+            </tr>
+            <tr>
+                <td>Amélioration du service</td>
+                <td>Intérêt légitime</td>
+                <td>Données anonymisées seulement</td>
+            </tr>
+            <tr>
+                <td>Sécurité et fraude</td>
+                <td>Intérêt légitime</td>
+                <td>3 mois après détection</td>
+            </tr>
+            <tr>
+                <td>Reporting légal/fiscal</td>
+                <td>Obligation légale</td>
+                <td>7 ans (archivage fiscal)</td>
+            </tr>
+            <tr>
+                <td>Marketing (si accepté)</td>
+                <td>Consentement explicite</td>
+                <td>Jusqu'à désinscription</td>
+            </tr>
+        </table>
+
+        <h3>Marketing et communications:</h3>
+        <ul>
+            <li>SafeBet peut envoyer emails: Updates, nouvelles features, promos</li>
+            <li>Vous pouvez vous désinscrire: Clic "Unsubscribe" ou Paramètres → Notifications</li>
+            <li>Désinscription: Immédiate, aucun email marketing n'est envoyé après</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>4. Destinataires des données</h2>
+
+        <h3>Partage interne:</h3>
+        <ul>
+            <li>Toutes les données sont disponibles au responsable (SafeBet) uniquement</li>
+            <li>Pas de sous-traitants internes</li>
+        </ul>
+
+        <h3>Partage avec tiers:</h3>
+        <table>
+            <tr>
+                <th>Tiers</th>
+                <th>Données partagées</th>
+                <th>Raison</th>
+                <th>Localisation</th>
+            </tr>
+            <tr>
+                <td><strong>Supabase</strong></td>
+                <td>Email, nom d'utilisateur, profil, historique paris</td>
+                <td>Stockage sécurisé (base de données)</td>
+                <td>Dublin (EU)</td>
+            </tr>
+            <tr>
+                <td><strong>Stripe</strong></td>
+                <td>Email, Stripe ID, historique paiements</td>
+                <td>Traitement paiements Premium</td>
+                <td>USA (Privacy Shield)</td>
+            </tr>
+            <tr>
+                <td><strong>Google Analytics</strong></td>
+                <td>IP (anonymisée), User-Agent, pages visitées, comportement</td>
+                <td>Analytics et amélioration service</td>
+                <td>USA</td>
+            </tr>
+            <tr>
+                <td><strong>Google OAuth</strong></td>
+                <td>Email, nom, avatar (si connexion Google)</td>
+                <td>Authentification alternative</td>
+                <td>USA</td>
+            </tr>
+            <tr>
+                <td><strong>Vercel</strong></td>
+                <td>Logs techniques (IP, User-Agent)</td>
+                <td>Hébergement et monitoring app</td>
+                <td>USA/EU</td>
+            </tr>
+        </table>
+
+        <h3>Transferts internationaux:</h3>
+        <ul>
+            <li>Stripe et Google: Localisés USA (non-UE)</li>
+            <li>Supabase, Vercel: Support EU (données UE possibles)</li>
+            <li><strong>Protections:</strong> Clauses contractuelles standard, Privacy Shield, GDPR adequacy</li>
+        </ul>
+
+        <h3>Partage légal:</h3>
+        <ul>
+            <li>Autorités publiques: Si obligation légale (mandat judiciaire, enquête)</li>
+            <li>Vente/Fusion: Données transférées avec NewCo (notification préalable)</li>
+            <li>Sans consentement: Uniquement si requis par loi</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>5. Durée de conservation</h2>
+
+        <table>
+            <tr>
+                <th>Données</th>
+                <th>Durée</th>
+                <th>Raison</th>
+            </tr>
+            <tr>
+                <td>Compte actif (profil, paris)</td>
+                <td>Jusqu'à suppression</td>
+                <td>Fonctionnement service</td>
+            </tr>
+            <tr>
+                <td>Après suppression de compte</td>
+                <td>30 jours (anonymisation)</td>
+                <td>Traçabilité, audit</td>
+            </tr>
+            <tr>
+                <td>Données anonymisées</td>
+                <td>Illimitée</td>
+                <td>Analytics et amélioration</td>
+            </tr>
+            <tr>
+                <td>Logs techniques (IP)</td>
+                <td>90 jours</td>
+                <td>Sécurité et debugging</td>
+            </tr>
+            <tr>
+                <td>Données paiement (Stripe)</td>
+                <td>7 ans</td>
+                <td>Obligations comptables</td>
+            </tr>
+            <tr>
+                <td>Emails support/tickets</td>
+                <td>1 an après fermeture</td>
+                <td>Réclamations, litiges</td>
+            </tr>
+            <tr>
+                <td>Google Analytics</td>
+                <td>26 mois</td>
+                <td>Politique Google</td>
+            </tr>
+        </table>
+
+        <h3>Suppression accélérée:</h3>
+        <p>Vous pouvez demander suppression immédiate (sans délai de 30j) si:</p>
+        <ul>
+            <li>Données non nécessaires pour litiges/compliance</li>
+            <li>Demande explicite de droit à l'oubli</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>6. Droits de l'utilisateur (RGPD)</h2>
+
+        <h3>Vous avez le droit de:</h3>
+
+        <h4>1️⃣ <strong>Droit d'accès</strong> (Article 15)</h4>
+        <ul>
+            <li>Obtenir copie de toutes vos données en possession de SafeBet</li>
+            <li><strong>Processus:</strong> Email privacy@safebet.local + identité vérifiée</li>
+            <li><strong>Délai:</strong> 30 jours (extensible 60j si complexe)</li>
+            <li><strong>Format:</strong> Fichier électronique (CSV, JSON)</li>
+            <li><strong>Coût:</strong> Gratuit (sauf demandes répétitives abusives)</li>
+        </ul>
+
+        <h4>2️⃣ <strong>Droit de rectification</strong> (Article 16)</h4>
+        <ul>
+            <li>Corriger données inexactes ou incomplètes</li>
+            <li><strong>Processus:</strong> Paramètres → Profil (direct) ou email privacy@safebet.local</li>
+            <li><strong>Délai:</strong> Immédiat</li>
+            <li><strong>Coût:</strong> Gratuit</li>
+        </ul>
+
+        <h4>3️⃣ <strong>Droit à l'oubli</strong> / Suppression (Article 17)</h4>
+        <ul>
+            <li>Demander suppression complète de vos données</li>
+            <li><strong>Exceptions:</strong> Données légales/comptables conservées (7 ans)</li>
+            <li><strong>Processus:</strong> Paramètres → Supprimer mon compte (immédiat) ou email</li>
+            <li><strong>Délai:</strong> 30 jours max (ou immédiat via paramètres)</li>
+            <li><strong>Coût:</strong> Gratuit</li>
+            <li><strong>Impact:</strong> Perte de compte + Bluff (pas de remboursement)</li>
+        </ul>
+
+        <h4>4️⃣ <strong>Droit de limitation de traitement</strong> (Article 18)</h4>
+        <ul>
+            <li>Demander suspension du traitement (ex: contestation d'exactitude)</li>
+            <li><strong>Processus:</strong> Email privacy@safebet.local</li>
+            <li><strong>Délai:</strong> 30 jours</li>
+            <li><strong>Effet:</strong> Données conservées mais pas traitées</li>
+        </ul>
+
+        <h4>5️⃣ <strong>Droit à la portabilité</strong> (Article 20)</h4>
+        <ul>
+            <li>Recevoir vos données dans format structuré, lisible (JSON, CSV)</li>
+            <li>Transférer à un autre service</li>
+            <li><strong>Processus:</strong> Email privacy@safebet.local</li>
+            <li><strong>Délai:</strong> 30 jours</li>
+            <li><strong>Format:</strong> JSON ou CSV</li>
+        </ul>
+
+        <h4>6️⃣ <strong>Droit d'opposition</strong> (Article 21)</h4>
+        <ul>
+            <li>Refuser traitement: Marketing, analytics, intérêt légitime</li>
+            <li><strong>Processus:</strong> Paramètres → Notifications (marketing) ou email</li>
+            <li><strong>Délai:</strong> Immédiat</li>
+            <li><strong>Exception:</strong> Données obligatoires (service fonctionnement)</li>
+        </ul>
+
+        <h4>7️⃣ <strong>Droit de révocation du consentement</strong> (Article 7.3)</h4>
+        <ul>
+            <li>Retirer consentement à tout moment (marketing, analytics)</li>
+            <li><strong>Processus:</strong> Paramètres ou email privacy@safebet.local</li>
+            <li><strong>Effet:</strong> Immédiat (rétroactif pour futurs traitements)</li>
+        </ul>
+
+        <h4>8️⃣ <strong>Droit de recours</strong> (Article 77-78)</h4>
+        <ul>
+            <li>Déposer plainte auprès de la CNIL (France)</li>
+            <li><strong>CNIL:</strong> https://www.cnil.fr</li>
+            <li>Saisir tribunal compétent en France</li>
+        </ul>
+
+        <h3>Comment exercer vos droits:</h3>
+        <table>
+            <tr>
+                <th>Droit</th>
+                <th>Processus</th>
+                <th>Délai réponse</th>
+            </tr>
+            <tr>
+                <td>Accès, rectification, suppression</td>
+                <td>Email privacy@safebet.local + ID vérifiée</td>
+                <td>30j</td>
+            </tr>
+            <tr>
+                <td>Limitation, portabilité, opposition</td>
+                <td>Email privacy@safebet.local</td>
+                <td>30j</td>
+            </tr>
+            <tr>
+                <td>Désinscription marketing</td>
+                <td>Lien "Unsubscribe" ou Paramètres</td>
+                <td>Immédiat</td>
+            </tr>
+            <tr>
+                <td>Suppression compte</td>
+                <td>Paramètres → Supprimer mon compte</td>
+                <td>Immédiat</td>
+            </tr>
+        </table>
+
+        <h3>Vérification de l'identité:</h3>
+        <ul>
+            <li>SafeBet peut demander: Copie ID, selfie, email confirmation</li>
+            <li>Objectif: Éviter requêtes frauduleuses</li>
+            <li>Données de vérification: Supprimées immédiatement après vérification</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>7. Sécurité des données</h2>
+
+        <h3>Mesures techniques:</h3>
+        <ul>
+            <li><strong>Chiffrement:</strong> HTTPS (TLS 1.2+) pour tous échanges</li>
+            <li><strong>Stockage:</strong> Base de données Supabase (chiffrement au repos)</li>
+            <li><strong>Mots de passe:</strong> Hashé avec bcrypt (jamais stocké en clair)</li>
+            <li><strong>Authentification:</strong> JWT tokens, Supabase Auth</li>
+            <li><strong>Backups:</strong> Automatiques quotidiens, chiffrés</li>
+        </ul>
+
+        <h3>Mesures organisationnelles:</h3>
+        <ul>
+            <li><strong>Accès:</strong> Limité aux personnels autorisés seulement</li>
+            <li><strong>Monitoring:</strong> Logs d'accès, alertes anormales</li>
+            <li><strong>Audit:</strong> Revue de sécurité trimestrielle</li>
+            <li><strong>Formation:</strong> Sensibilisation RGPD pour l'équipe</li>
+        </ul>
+
+        <h3>Gestion des incidents:</h3>
+        <ul>
+            <li>En cas de fuite de données: Notification CNIL + utilisateurs dans 72h</li>
+            <li>Processus d'investigation et correction</li>
+            <li>Aucune information personnelle à partager publiquement</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>8. Cookies et technologies de tracking</h2>
+
+        <h3>Types de cookies:</h3>
+        <table>
+            <tr>
+                <th>Type</th>
+                <th>Utilisé par</th>
+                <th>Finalité</th>
+                <th>Durée</th>
+                <th>Essentiels?</th>
+            </tr>
+            <tr>
+                <td>Authentification</td>
+                <td>Supabase</td>
+                <td>Garder session connectée</td>
+                <td>7 jours</td>
+                <td>✅ Oui</td>
+            </tr>
+            <tr>
+                <td>Préférences UI</td>
+                <td>SafeBet (local storage)</td>
+                <td>Dark mode, langue, layout</td>
+                <td>Illimitée</td>
+                <td>✅ Oui</td>
+            </tr>
+            <tr>
+                <td>Google Analytics</td>
+                <td>Google</td>
+                <td>Analytics (anonymisé)</td>
+                <td>2 ans</td>
+                <td>⭕ Non (consentement)</td>
+            </tr>
+            <tr>
+                <td>Service Worker cache</td>
+                <td>Navigateur (PWA)</td>
+                <td>Offline support</td>
+                <td>Jusqu'à clear cache</td>
+                <td>✅ Oui</td>
+            </tr>
+        </table>
+
+        <h3>Votre contrôle:</h3>
+        <ul>
+            <li>Navigateur → Paramètres → Cookies & données du site</li>
+            <li>Refuser analytics: Paramètres SafeBet → Confidentialité</li>
+            <li>Clear cache: Navigateur → Paramètres → Données de navigation</li>
+            <li><strong>Note:</strong> Refuser cookies essentiels = app non-fonctionnelle</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>9. Politique pour les enfants</h2>
+
+        <h3>Âge minimum: 13 ans</h3>
+        <ul>
+            <li>SafeBet est accessible dès 13 ans (simulation jeux, pas argent réel)</li>
+            <li><strong>Parents/tuteurs:</strong> Responsabilité de superviser utilisation</li>
+            <li>Pas de collecte intentionnelle données < 13 ans</li>
+            <li>Si découvert < 13 ans: Suppression immédiate (email parents)</li>
+        </ul>
+
+        <h3>Recommandations:</h3>
+        <ul>
+            <li>Parents peuvent surveiller profil enfant</li>
+            <li>Paramètres parentaux possibles (non implémentés actuellement)</li>
+            <li>Contacter support si enfant < 13 ans inscrit</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>10. Modifications de cette politique</h2>
+        <ul>
+            <li>SafeBet peut modifier cette politique à tout moment</li>
+            <li><strong>Notification:</strong> Email + banneau app (30 jours avant)</li>
+            <li>Modifications mineures (clarifications): Appliquées immédiatement</li>
+            <li><strong>Consentement renouvelé:</strong> Pour changements majeurs</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>11. Contact et réclamations</h2>
+
+        <h3>Questions sur données:</h3>
+        <ul>
+            <li><strong>Email:</strong> privacy@safebet.local</li>
+            <li><strong>Délai réponse:</strong> 48-72 heures</li>
+        </ul>
+
+        <h3>Réclamation RGPD:</h3>
+        <ul>
+            <li><strong>Auprès de SafeBet:</strong> privacy@safebet.local</li>
+            <li><strong>Auprès de la CNIL:</strong> https://www.cnil.fr/plaintes</li>
+            <li><strong>Juridiction:</strong> Tribunaux français</li>
+        </ul>
+
+        <h3>DPO (Délégué Protection Données):</h3>
+        <ul>
+            <li><strong>Coordonnées:</strong> privacy@safebet.local</li>
+            <li>Responsable conformité RGPD et réclamations</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>12. Conformité internationale</h2>
+        <ul>
+            <li><strong>RGPD (UE):</strong> Pleinement conforme</li>
+            <li><strong>CNIL (France):</strong> Obligations respectées</li>
+            <li><strong>ePrivacy Directive:</strong> Cookies conformes</li>
+            <li><strong>CCPA (Californie):</strong> Non applicable (pas de résidents CA cibles)</li>
+            <li><strong>LGPD (Brésil):</strong> Non applicable</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <p style="text-align: center; color: #999; font-size: 12px;">
+            Dernière mise à jour: 8 Juin 2026<br>
+            Version 1.0<br>
+            © SafeBet - Tous droits réservés
+        </p>
+    </div>
+</body>
+</html>
