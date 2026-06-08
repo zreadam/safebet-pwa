@@ -188,7 +188,6 @@ export const NATIONAL_TEAMS: Record<string, string> = {
   "Bahrain": "BH",
   "Bahreïn": "BH",
   "Oman": "OM",
-  "Oman": "OM",
   "Jordan": "JO",
   "Jordanie": "JO",
   "Lebanon": "LB",
@@ -198,7 +197,6 @@ export const NATIONAL_TEAMS: Record<string, string> = {
   "Palestine": "PS",
   "Israel": "IL",
   "Israël": "IL",
-  "Afghanistan": "AF",
   "Afghanistan": "AF",
 
   // Africa
