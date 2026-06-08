@@ -56,66 +56,76 @@ async function fetchTeamsFromLeague(leagueId: number): Promise<ApiTeam[]> {
   }
 }
 
+// Sync a single league
+export async function syncLeague(leagueId: number, supabase: any) {
+  const league = LEAGUES_TO_SYNC.find((l) => l.id === leagueId)
+  if (!league) return { success: false, message: "League not found" }
+
+  console.log(`Syncing ${league.name}...`)
+  const teams = await fetchTeamsFromLeague(leagueId)
+
+  let count = 0
+  for (const apiTeam of teams) {
+    const { team } = apiTeam
+    if (!team.id || !team.name) continue
+
+    try {
+      const { error } = await supabase.from("team_logos").upsert(
+        {
+          id: team.id,
+          team_name: team.name,
+          team_code: team.code,
+          logo_url: team.logo,
+          league_ids: [leagueId.toString()],
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      )
+
+      if (!error) count++
+    } catch (err) {
+      console.error(`Error upserting team ${team.name}:`, err)
+    }
+  }
+
+  return { success: true, league: league.name, teams: count }
+}
+
 export async function POST(request: Request) {
-  // Verify admin (basic check - in production, use proper auth)
+  // Verify admin
   const authHeader = request.headers.get("authorization")
   if (authHeader !== `Bearer ${process.env.ADMIN_TOKEN}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const { leagueId } = await request.json().catch(() => ({}))
+
   const supabase = await createClient()
 
-  let totalTeams = 0
-  let errors = 0
-
   try {
-    for (const league of LEAGUES_TO_SYNC) {
-      console.log(`Fetching teams from ${league.name}...`)
-      const teams = await fetchTeamsFromLeague(league.id)
-
-      for (const apiTeam of teams) {
-        const { team } = apiTeam
-        if (!team.id || !team.name) continue
-
-        try {
-          // Upsert team into database
-          const { error } = await supabase.from("team_logos").upsert(
-            {
-              id: team.id,
-              team_name: team.name,
-              team_code: team.code,
-              logo_url: team.logo,
-              league_ids: [league.id.toString()],
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "id" }
-          )
-
-          if (error) {
-            console.error(`Error upserting team ${team.name}:`, error)
-            errors++
-          } else {
-            totalTeams++
-          }
-        } catch (err) {
-          console.error(`Exception upserting team ${team.name}:`, err)
-          errors++
-        }
+    if (leagueId) {
+      // Sync single league (fast path - < 60s)
+      const result = await syncLeague(leagueId, supabase)
+      return NextResponse.json(result)
+    } else {
+      // Sync all leagues - return immediately with instructions
+      // The sync happens in background
+      for (const league of LEAGUES_TO_SYNC) {
+        syncLeague(league.id, supabase).catch((err) =>
+          console.error(`Background sync error for league ${league.id}:`, err)
+        )
       }
 
-      // Rate limit: wait 1 second between league requests
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Sync started in background for all leagues",
+          instructions: "Each league syncs independently to avoid timeouts",
+          checkStatus: "GET /api/teams/list to see progress",
+        },
+        { status: 202 } // 202 Accepted
+      )
     }
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: `Synced ${totalTeams} teams`,
-        errors,
-        totalTeams,
-      },
-      { status: 200 }
-    )
   } catch (error) {
     console.error("Sync error:", error)
     return NextResponse.json(
@@ -125,14 +135,22 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const leagueId = searchParams.get("league")
+
   const supabase = await createClient()
 
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("team_logos")
       .select("id, team_name, team_code, logo_url, league_ids")
-      .limit(10)
+
+    if (leagueId) {
+      query = query.contains("league_ids", [leagueId])
+    }
+
+    const { data, error, count } = await query.limit(10)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -142,7 +160,12 @@ export async function GET() {
       status: "ok",
       count: data?.length || 0,
       sample: data,
-      message: "Use POST with admin token to sync all teams",
+      message: "Use POST to sync teams by league",
+      endpoints: {
+        syncAllBackground: "POST /api/teams/sync-logos (starts async sync)",
+        syncSingleLeague: "POST /api/teams/sync-logos {leagueId: 39}",
+        listTeams: "GET /api/teams/list",
+      },
     })
   } catch (error) {
     return NextResponse.json(
